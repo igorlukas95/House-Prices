@@ -9,7 +9,7 @@ from house_price_model import __version__
 
 
 def load_dataset(*, filename: Path) -> pd.DataFrame:
-    """Loads the data as DataFrame"""
+    """Loads data as DataFrame"""
     dataframe = pd.read_csv(f"{DATASET/filename}")
     return dataframe
 
