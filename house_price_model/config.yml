@@ -22,11 +22,17 @@ categorical_vars_imputing_with_missing:
 temporal_variables:
   - YearRemodAdd
 
+
+variables_to_rename:
+  1stFlrSF: FirstFlrSF
+  2ndFlrSF: SecondFlrSF
+  3SsnPorch: ThreeSsnPorch
+
 reference_var: YrSold
 
 log_transformation_variables:
   - LotArea
-  - 1stFlrSF
+  - FirstFlrSF
   - GrLivArea
 
 binarize_transformation_variables:
@@ -92,7 +98,7 @@ garagefinish_mapping:
   NA: 0
 
 features:
-  - 1stFlrSF
+  - FirstFlrSF
   - BldgType
   - BsmtCond
   - BsmtExposure

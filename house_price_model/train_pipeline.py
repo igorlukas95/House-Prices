@@ -4,9 +4,11 @@ from house_price_model.Config.core import _config
 from house_price_model.Preprocessing.data_manager import load_dataset, save_pipeline
 from house_price_model.pipeline import pipeline
 
+
 def train_pipeline() -> None:
     """Train Pipeline"""
     dataframe = load_dataset(filename=_config.config_app.training_data)
+    dataframe.rename(columns=_config.config_model.variables_to_rename, inplace=True)
 
     X_train, X_test, y_train, y_test = train_test_split(
         dataframe[_config.config_model.features],
@@ -24,4 +26,3 @@ def train_pipeline() -> None:
 
 if __name__ == "__main__":
     train_pipeline()
-

@@ -1,11 +1,8 @@
 from pydantic import BaseModel
-from typing import List, Union, Mapping, Optional
+from typing import List, Mapping, Optional, Dict
 from strictyaml import YAML, load
 from yaml import YAMLError
-import house_price_model
 from pathlib import Path
-import yaml
-
 
 PACKAGE_ROOT = Path(__file__).parent.parent.absolute()
 CONFIG_FILE_PATH = PACKAGE_ROOT / 'config.yml'
@@ -23,6 +20,7 @@ class AppConfig(BaseModel):
 class ModelConfig(BaseModel):
     categorical_vars_with_na_frequent: List[str]
     categorical_vars_imputing_with_missing: List[str]
+    variables_to_rename: Dict
     temporal_variables: List[str]
     reference_var: str
     log_transformation_variables: List[str]
@@ -39,6 +37,7 @@ class ModelConfig(BaseModel):
     test_size: float
     random_state: int
     target: str
+
 
 class Config(BaseModel):
     config_app: AppConfig
@@ -59,11 +58,9 @@ def load_yaml_file(yaml_path: Optional[Path] = CONFIG_FILE_PATH) -> YAML:
 def load_and_validate_config(config: YAML = None) -> Config:
     config = load_yaml_file()
     return Config(
-        config_app = AppConfig(**config.data),
-        config_model = ModelConfig(**config.data)
+        config_app=AppConfig(**config.data),
+        config_model=ModelConfig(**config.data)
     )
 
 
-
 _config = load_and_validate_config()
-

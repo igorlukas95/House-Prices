@@ -2,15 +2,14 @@ from house_price_model.Config.core import _config, TRAINED_MODEL_DIR, DATASET
 import typing as t
 import joblib
 import pandas as pd
-from sklearn.pipeline import  Pipeline
+from sklearn.pipeline import Pipeline
 from pathlib import Path
 from house_price_model import __version__
 
 
-
 def load_dataset(*, filename: Path) -> pd.DataFrame:
     """Loads data as DataFrame"""
-    dataframe = pd.read_csv(f"{DATASET/filename}")
+    dataframe = pd.read_csv(f"{DATASET / filename}")
     return dataframe
 
 
@@ -31,8 +30,6 @@ def save_pipeline(*, pipeline: Pipeline) -> None:
 
 def remove_pipeline(*, file_to_keep: t.List[str] = None) -> None:
     """Removes old pipeline"""
-    for model_path  in TRAINED_MODEL_DIR.iterdir():
+    for model_path in TRAINED_MODEL_DIR.iterdir():
         if model_path not in ['__init__.py', file_to_keep]:
             model_path.unlink()
-
-
