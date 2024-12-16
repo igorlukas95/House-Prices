@@ -1,13 +1,17 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
 from house_price_model.Config.core import _config
-from house_price_model.Preprocessing.data_manager import load_dataset, save_pipeline
+from house_price_model.Preprocessing.data_manager import load_datasets, save_pipeline
 from house_price_model.pipeline import pipeline
 
 
 def train_pipeline() -> None:
-    """Train Pipeline"""
-    dataframe = load_dataset(filename=_config.config_app.training_data)
+    """Train Pipeline
+
+    This function loads training dataset, renames variables that names starts with number, splits data,
+    perform logarithmic transformation on target, train and saves a pipeline in specified folder.
+    """
+    dataframe = load_datasets(mode='train')
     dataframe.rename(columns=_config.config_model.variables_to_rename, inplace=True)
 
     X_train, X_test, y_train, y_test = train_test_split(

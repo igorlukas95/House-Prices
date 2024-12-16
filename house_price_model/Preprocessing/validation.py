@@ -2,11 +2,18 @@ import numpy as np
 import pandas as pd
 from typing import Optional, Tuple
 from house_price_model.Config.core import _config
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field
 
 
 def drop_missing_values(X: pd.DataFrame) -> pd.DataFrame:
-    """Drops missing values that are not declared in config"""
+    """Drops missing values that aren't declared in config
+
+    Args:
+        X (pd.DataFrame): Input DataFrame.
+
+    Returns:
+        DataFrame: Returns DataFrame without missing data.
+    """
 
     X = X.copy()
     col_with_missing = [
@@ -22,13 +29,20 @@ def drop_missing_values(X: pd.DataFrame) -> pd.DataFrame:
 
 
 def validate_data(X: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
-    """Validates model values"""
+    """Validates model values
+
+    Args:
+        X (pd.DataFrame): Input DataFrame
+
+    Returns:
+        Tuple[pd.DataFrame, dict]: Returns Tuple with validated dataframe and caught errors.
+    """
 
     dataframe = X.copy()
     dataframe.rename(columns=_config.config_model.variables_to_rename, inplace=True)
     dataframe = dataframe[_config.config_model.features]
     dataframe = drop_missing_values(dataframe)
-    errors = None
+    errors = {}
 
     try:
         MainModelConfig(input=dataframe.replace(np.nan, None).to_dict(orient="records"))
@@ -37,94 +51,94 @@ def validate_data(X: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
 
     return dataframe, errors
 
-
-
-
-
-
 class ValidationModelConfig(BaseModel):
-    Alley: Optional[str]
-    BedroomAbvGr: Optional[int]
-    BldgType: Optional[str]
-    BsmtCond: Optional[str]
-    BsmtExposure: Optional[str]
-    BsmtFinSF1: Optional[float]
-    BsmtFinSF2: Optional[float]
-    BsmtFinType1: Optional[str]
-    BsmtFinType2: Optional[str]
-    BsmtFullBath: Optional[float]
-    BsmtHalfBath: Optional[float]
-    BsmtQual: Optional[str]
-    BsmtUnfSF: Optional[float]
-    CentralAir: Optional[str]
-    Condition1: Optional[str]
-    Condition2: Optional[str]
-    Electrical: Optional[str]
-    EnclosedPorch: Optional[int]
-    ExterCond: Optional[str]
-    ExterQual: Optional[str]
-    Exterior1st: Optional[str]
-    Exterior2nd: Optional[str]
-    Fence: Optional[str]
-    FireplaceQu: Optional[str]
-    Fireplaces: Optional[int]
-    Foundation: Optional[str]
-    FullBath: Optional[int]
-    Functional: Optional[str]
-    GarageArea: Optional[float]
-    GarageCars: Optional[float]
-    GarageCond: Optional[str]
-    GarageFinish: Optional[str]
-    GarageQual: Optional[str]
-    GarageType: Optional[str]
-    GarageYrBlt: Optional[float]
-    GrLivArea: Optional[int]
-    HalfBath: Optional[int]
-    Heating: Optional[str]
-    HeatingQC: Optional[str]
-    HouseStyle: Optional[str]
-    Id: Optional[int]
-    KitchenAbvGr: Optional[int]
-    KitchenQual: Optional[str]
-    LandContour: Optional[str]
-    LandSlope: Optional[str]
-    LotArea: Optional[int]
-    LotConfig: Optional[str]
-    LotFrontage: Optional[float]
-    LotShape: Optional[str]
-    LowQualFinSF: Optional[int]
-    MSSubClass: Optional[int]
-    MSZoning: Optional[str]
-    MasVnrArea: Optional[float]
-    MasVnrType: Optional[str]
-    MiscFeature: Optional[str]
-    MiscVal: Optional[int]
-    MoSold: Optional[int]
-    Neighborhood: Optional[str]
-    OpenPorchSF: Optional[int]
-    OverallCond: Optional[int]
-    OverallQual: Optional[int]
-    PavedDrive: Optional[str]
-    PoolArea: Optional[int]
-    PoolQC: Optional[str]
-    RoofMatl: Optional[str]
-    RoofStyle: Optional[str]
-    SaleCondition: Optional[str]
-    SaleType: Optional[str]
-    ScreenPorch: Optional[int]
-    Street: Optional[str]
-    TotRmsAbvGrd: Optional[int]
-    TotalBsmtSF: Optional[float]
-    Utilities: Optional[str]
-    WoodDeckSF: Optional[int]
-    YearBuilt: Optional[int]
-    YearRemodAdd: Optional[int]
-    YrSold: Optional[int]
-    FirstFlrSF: Optional[str]
-    SecondFlrSF: Optional[str]
-    ThreeSsnPorch: Optional[str]
+    """ Validation model
+    This class defines types and validation rules for each variable.
+    """
+    Alley: str = Field(max_length=4)
+    BedroomAbvGr: int = Field(ge=0, le=7)
+    BldgType: str = Field(max_length=6)
+    BsmtCond: str = Field(max_length=2)
+    BsmtExposure: str = Field(max_length=2)
+    BsmtFinSF1: float = Field(ge=0, le=5500)
+    BsmtFinSF2: float = Field(ge=0, le=1500)
+    BsmtFinType1: str = Field(max_length=3)
+    BsmtFinType2: str = Field(max_length=3)
+    BsmtFullBath: float = Field(ge=0, le=3)
+    BsmtHalfBath: float = Field(ge=0, le=2)
+    BsmtQual: str = Field(max_length=2)
+    BsmtUnfSF: float = Field(le=0, ge=2350)
+    CentralAir: str = Field(max_length=1)
+    Condition1: str = Field(max_length=5)
+    Condition2: str = Field(max_length=5)
+    Electrical: str = Field(max_length=5)
+    EnclosedPorch: int = Field(ge=0, le=550)
+    ExterCond: str = Field(max_length=2)
+    ExterQual: str = Field(max_length=2)
+    Exterior1st: str = Field(max_length=7)
+    Exterior2nd: str = Field(max_length=7)
+    Fence: str = Field(max_length=5)
+    FireplaceQu: str = Field(max_length=2)
+    Fireplaces: int = Field(ge=0, le=3)
+    Foundation: str = Field(max_length=6)
+    FullBath: int = Field(ge=0, le=3)
+    Functional: str = Field(max_length=5)
+    GarageArea: float = Field(ge=0, le=1500)
+    GarageCars: float = Field(ge=0, le=5)
+    GarageCond: str = Field(max_length=2)
+    GarageFinish: str = Field(max_length=3)
+    GarageQual: str = Field(max_length=3)
+    GarageType: str = Field(max_length=7)
+    GarageYrBlt: float = Field(ge=1900, le=2024)
+    GrLivArea: int = Field(ge=400, le=5700)
+    HalfBath: int = Field(ge=0, le=2)
+    Heating: str = Field(max_length=5)
+    HeatingQC: str = Field(max_length=2)
+    HouseStyle: str = Field(max_length=6)
+    Id: int = Field(ge=1)
+    KitchenAbvGr: int = Field(ge=0, le=3)
+    KitchenQual: str = Field(max_length=2)
+    LandContour: str = Field(max_length=3)
+    LandSlope: str = Field(max_length=3)
+    LotArea: int = Field(ge=1300, le=50000)
+    LotConfig: str = Field(max_length=7)
+    LotFrontage: float = Field(ge=0, le=150)
+    LotShape: str = Field(max_length=3)
+    LowQualFinSF: int = Field(ge=0, le=580)
+    MSSubClass: int = Field(ge=20, le=190)
+    MSZoning: str = Field(max_length=6)
+    MasVnrArea: float = Field(ge=0, le=1500)
+    MasVnrType: str = Field(max_length=7)
+    MiscFeature: str = Field(max_length=4)
+    MiscVal: int = Field(ge=0, le=1550)
+    MoSold: int = Field(ge=1, le=12)
+    Neighborhood: str = Field(max_length=7)
+    OpenPorchSF: int = Field(ge=0, le=500)
+    OverallCond: int = Field(ge=1, le=9)
+    OverallQual: int = Field(ge=1, le=10)
+    PavedDrive: str = Field(max_length=1)
+    PoolArea: int = Field(le=0, ge=100)
+    PoolQC: str = Field(max_length=2)
+    RoofMatl: str = Field(max_length=7)
+    RoofStyle: str = Field(max_length=7)
+    SaleCondition: str = Field(max_length=7)
+    SaleType: str = Field(max_length=5)
+    ScreenPorch: int = Field(ge=0, le=300)
+    Street: str = Field(max_length=4)
+    TotRmsAbvGrd: int = Field(ge=2, le=14)
+    TotalBsmtSF: float = Field(le=0, ge=2500)
+    Utilities: str = Field(max_length=6)
+    WoodDeckSF: int = Field(ge=0, le=550)
+    YearBuilt: int = Field(ge=1872, le=2024)
+    YearRemodAdd: int = Field(ge=1950, le=2024)
+    YrSold: int = Field(ge=2010, le=2024)
+    FirstFlrSF: int = Field(ge=300, le=3000)
+    SecondFlrSF: int = Field(ge=0, le=1500)
+    ThreeSsnPorch: int = Field(ge=0, le=250)
 
 
 
 class MainModelConfig(BaseModel):
+    """This class wraps the ValidationModelConfig to validate a collection of data
+    """
     input: ValidationModelConfig

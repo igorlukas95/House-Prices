@@ -5,34 +5,59 @@ from typing import List, Dict, Union
 
 
 class TemporalVariableTransformer(BaseEstimator, TransformerMixin):
-    """
-    Transforms datetime variables by subtracting a reference datetime variable.
+    """Transforms datetime variables by subtracting a reference datetime variable.
 
     Attributes:
-    variables: List[str]
-        List of variables.
-    reference_str:  str
-        Variable to be subtracted from datetime variables.
+        variables_ (List[str]): List of variables.
+        reference_str_ (str): Name of variable to be subtracted from datetime variables.
+
     """
     def __init__(self, variables: List[str], reference_str: str) -> None:
-        self.variables = variables
-        self.reference_str = reference_str
+        """Initializes the TemporalVariableTransformer
+
+        Args:
+            variables (List[str]): List of datetime variables.
+            reference_str (str): Reference datetime variable to be subtracted.
+
+        Raises:
+            TypeError: If variables is not a list or reference_str a string.
+        """
 
         if not isinstance(variables, list):
             raise TypeError("Variables should be a list")
         if not isinstance(reference_str, str):
             raise TypeError("Reference should be a string")
 
+        self.variables_ = variables
+        self.reference_str_ = reference_str
+
 
     def fit(self, X: pd.DataFrame, y: pd.Series = None) -> 'TemporalVariableTransformer':
+        """This step doesn't perform any action.
+
+        Args:
+            X (pd.DataFrame): Input DataFrame.
+            y (pd.Series): Input Series.
+
+        Returns:
+            TemporalVariableTransformer: Returns fitted transformer.
+        """
         return self
 
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """ Subtract reference variable with datetime column.
+
+        Args:
+            X (pd.dataFrame): Input DataFrame
+
+        Returns:
+            DataFrame: Returns DataFrame with transformed datetime variables.
+        """
         X = X.copy()
-        for col in self.variables:
+        for col in self.variables_:
             if col in X.columns:
-                X[col] = X[self.reference_str] - X[col]
+                X[col] = X[self.reference_str_] - X[col]
             else:
                 raise KeyError("Column {col} was not found in DataFrame")
         return X
@@ -43,43 +68,72 @@ class CustomSimpleImpute(BaseEstimator, TransformerMixin):
     Impute missing values using specified method.
 
     Attributes:
-        variables: List[str]
-            List of variables
-        imputation: str
-            Imputation method (median, mean, constant, most_frequent)
-        fill_values: str
-            The fixed value used for filling missing value.
+
+        variables_ (List[str]): List of variables.
+
+        imputation_ (str): Imputation method (median, mean, constant, most_frequent).
+
+        fill_values_ (str): The fixed value used for filling missing value.
+
+        encoder_ (Dict[str, Union[str, float, int]]): Dictionary storing variable names and values corresponding to imputed values used for imputation.
     """
     def __init__(self, variables: List[str], imputation: str = "mean", fill_values: Union[int, float, str] = "Missing"):
-        self.variables = variables
-        self.imputation = imputation
-        self.fill_values = fill_values
-        self.encoder: Dict[str, Union[str, float, int]] = {}
+        """ Initializes the CustomSimpleImpute
+
+        Args:
+            variables (List[str]): List of variables to be imputed.
+            imputation (str): Imputation method.
+            fill_values (Union[int, float, str]): The fixed value used for filling missing values when imputation method is "constant".
+        """
+        self.variables_ = variables
+        self.imputation_ = imputation
+        self.fill_values_ = fill_values
+        self.encoder_: Dict[str, Union[str, float, int]] = {}
 
         if not isinstance(variables, list):
             raise TypeError("Variables must be a list")
-        if self.imputation not in ["mean", "median", "constant", "most_frequent"]:
+        if self.imputation_ not in ["mean", "median", "constant", "most_frequent"]:
             raise ValueError("Imputation must be following values ['mean', 'median', 'constant', 'most_frequent']")
 
     def fit(self, X: pd.DataFrame, y: pd.Series = None) -> 'CustomSimpleImpute':
-        for col in self.variables:
+        """ Calculates the central tendency values for each variable.
+        Args:
+            X (pd.DataFrame): Input DataFrame.
+            y (pd.Series): Input Series.
+
+        Returns:
+            CustomSimpleImpute: Returns fitted transformer.
+        """
+        for col in self.variables_:
             if col in X.columns:
-                if self.imputation == "mean":
-                    self.encoder[col] = X[col].mean()
-                elif self.imputation == "median":
-                    self.encoder[col] = X[col].median()
-                elif self.imputation == "most_frequent":
-                    self.encoder[col] = X[col].mode()[0]
-                elif self.imputation == "constant":
-                    self.encoder[col] = self.fill_values
+                if self.imputation_ == "mean":
+                    self.encoder_[col] = X[col].mean()
+                elif self.imputation_ == "median":
+                    self.encoder_[col] = X[col].median()
+                elif self.imputation_ == "most_frequent":
+                    self.encoder_[col] = X[col].mode()[0]
+                elif self.imputation_ == "constant":
+                    self.encoder_[col] = self.fill_values_
             else:
                 raise KeyError(f"Column {col} was not found in DataFrame")
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        for col in self.variables:
+        """
+        Impute missing values with their corresponding imputation values stored in encoder.
+
+        Args:
+            X (pd.DataFrame): Input DataFrame.
+
+        Returns:
+            DataFrame: Returns DataFrame with missing values filler for specified columns.
+
+        Raises:
+            Keyword: If column specified in variables wasn't found in DataFrame.
+        """
+        for col in self.variables_:
             if col in X.columns:
-                X[col] = X[col].fillna(self.encoder[col])
+                X[col] = X[col].fillna(self.encoder_[col])
             else:
                 raise KeyError(f"Column {col} was not found in DataFrame")
         return X
@@ -88,15 +142,23 @@ class CustomSimpleImpute(BaseEstimator, TransformerMixin):
 class Mapper(BaseEstimator, TransformerMixin):
     """
     Maps categorical variables to numeric values.
+
     Attributes:
-        variables: List[str]
-            List of categorical variables
-        mapping: Dict[str, int]
-            Dictionary with mapping.
+        variables_ (List[str]): List of categorical variables
+        mapping_ (Dict[str, int]): Dictionary with mapping.
     """
     def __init__(self, variables: List[str], mapping: Dict[str, int]) -> None:
-        self.variables = variables
-        self.mapping = mapping
+        """ Initializes Mapper
+
+        Args:
+            variables (List[str]): List of categorical variables.
+            mapping (Dict[str, int]): Dictionary with specified mapping.
+
+        Raises:
+            TypeError: If variables is not a list or mapping a dictionary.
+        """
+        self.variables_ = variables
+        self.mapping_ = mapping
 
         if not isinstance(variables, list):
             raise TypeError("Variables is not a list")
@@ -104,13 +166,32 @@ class Mapper(BaseEstimator, TransformerMixin):
             raise TypeError("Mapping is not a dictionary")
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> 'Mapper':
+        """This step doesn't perform any action.
+        Args:
+            X (pd.DataFrame): Input DataFrame
+            y (pd.Series): Input Series
+
+        Returns:
+            Mapper: Returns fitted transformer.
+        """
         return self
 
-    def transform(self, X: pd.DataFrame):
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """ Maps variables to their corresponding numeric values.
+
+        Args:
+            X (pd.DataFrame): Input DataFrame.
+
+        Returns:
+            DataFrame: Returns DataFrame with mapped variables values.
+
+        Raises:
+            Keyword: If variable specified in variables_ was not found in DataFrame.
+        """
         X = X.copy()
-        for col in self.variables:
+        for col in self.variables_:
             if col in X.columns:
-                X[col] = X[col].map(self.mapping)
+                X[col] = X[col].map(self.mapping_)
             else:
                 raise KeyError(f"Column {col} was not found in DataFrame")
         return X
@@ -119,51 +200,86 @@ class Mapper(BaseEstimator, TransformerMixin):
 
 class RareLabelsEncoder(BaseEstimator, TransformerMixin):
     """
-    Encodes categories with frequency below threshold as Rare.
+    Encodes categories with frequency below a threshold as Rare.
 
     Attributes:
-        variables: List[str]
-            List of variables
-        threshold: float
-            The minimum frequency required for a variable to be included in returned list
+        variables_ (List[str]): List of variable
+        threshold_ (float): The minimum frequency required for a variable to be included in a returned list. By default, is equal to 0.01.
+        encoder_ (dict): Dictionary with variables names and corresponding values divided into saved and changed to 'Rare'.
     """
     def __init__(self, variables: List[str], threshold: float = 0.01) -> None:
-        self.variables = variables
-        self.threshold = threshold
-        self.encoder: dict = {}
+        """ Initializes RareLabelsEncoder
+
+        Args:
+            variables (List[str]): List of categorical variables.
+            threshold (float): The minimum frequency threshold for value to be included. Below this threshold, value is change to 'Rare'.
+        Raises:
+            TypeError: If variables is not a list or threshold a float.
+            ValueError: IF a threshold is lower than 0 or greater than 1.
+        """
+        self.variables_ = variables
+        self.threshold_ = threshold
+        self.encoder_: dict = {}
+
         if not isinstance(variables, list):
             raise TypeError("Variables is not a list")
         if not isinstance(threshold, float):
-            raise ValueError("Threshold must be a floating number")
+            raise TypeError("Threshold must be a floating number")
+        if threshold < 0.0 or threshold> 1.0:
+            raise ValueError("Threshold must be between 0 and 100")
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> 'RareLabelsEncoder':
+        """Calculates frequency of each value in specified variable
+           and save values that are above a threshold
+
+        Args:
+            X (pd.DataFrame): Input Pandas.
+            y (pd.Series): Input Series.
+
+        Returns:
+            RareLabelsEncoder: Returns fitted transformer.
+
+        Raises:
+            KeyError: If column specified in variables_ is not in DataFrame.
+        """
         X_copy = pd.concat([X, y], axis=1)
-        for col in self.variables:
+        for col in self.variables_:
             if col in X.columns:
                 rare = (
                     pd.Series(
                         X_copy[col].value_counts(normalize=True)
                     )
                 )
-                self.encoder[col] = (
-                    list(rare[rare > self.threshold].index)
+                self.encoder_[col] = (
+                    list(rare[rare > self.threshold_].index)
                 )
             else:
-                raise ValueError(f"Column {col} is missing")
+                raise KeyError(f"Column {col} is missing")
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """ Maps variables that aren't in encoder as 'Rare'
+
+        Args:
+            X (pd.DataFrame): Input DataFrame.
+
+        Returns:
+            DataFrame: Returns DataFrame with mapped variables.
+
+        Raises:
+            KeyError: If column specified in variables_ wasn't found in DataFrame.
+        """
         X = X.copy()
-        for col in self.variables:
+        for col in self.variables_:
             if col in X.columns:
                 X[col] = (
                     np.where(
                         X[col].isin(
-                            self.encoder[col]), X[col], 'Rare'
+                            self.encoder_[col]), X[col], 'Rare'
                     )
                 )
             else:
-                raise ValueError(f"Column {col} is missing")
+                raise KeyError(f"Column {col} is missing")
         return X
 
 
@@ -172,32 +288,56 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
     """
     Encodes categories based on target in ascending order.
 
-    variables: List[str]
-        List of variables
-    method: str
-        Method to calculate order
+    Attributes:
+        variables_ (List[str]): List of variables.
+        method_ (str): Measures of a central tendency.
+        encoder_ (Dict[str, dict]): Dictionary storing variables names as keys and numbers as values in monotonic order base on Target.
     """
     def __init__(self, variables: List[str], method: str = 'mean') -> None:
-        self.variables = variables
-        self.method = method
-        self.encoder: Dict[str, dict] = {}
+        """Initializes MonotonicOrdinalEncoder
+
+        Args:
+            variables (List[str]): List of variables.
+            method (str): Measures of a central tendency.
+
+        Raises:
+            TypeError: If variables is not a list or method a string.
+            ValueError: If method is not equal to 'mean' or 'median'.
+        """
+        self.variables_ = variables
+        self.method_ = method
+        self.encoder_: Dict[str, dict] = {}
+
         if not isinstance(variables, list):
-            raise TypeError('Variables must be a list')
-        if self.method not in ['mean', 'median']:
-            raise ValueError('Method must be "median" or "mean"')
+            raise TypeError('variables must be a list')
+
+        if not isinstance(method, str):
+            raise TypeError('method must be of type string')
+
+        if self.method_ not in ['mean', 'median']:
+            raise ValueError('method must be "median" or "mean"')
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> 'MonotonicOrdinalEncoder':
+        """ Calculates the mean or median of each category and sorts the categories
+        in ascending order, then it assigns integer encodings to the categories.
+        Args:
+            X (pd.DataFrame): Input DataFrame.
+            y (pd.Series): Input Series.
+
+        Returns:
+            MonotonicOrdinalEncoder: Returns fitted transformer.
+        """
         dataframe = pd.concat([X, y], axis=1)
         sorted_variables = None
-        for col in self.variables:
+        for col in self.variables_:
             if col in X.columns:
-                if self.method == 'mean':
+                if self.method_ == 'mean':
                     sorted_variables = (
                         dataframe.groupby([col])['SalePrice']
                         .mean()
                         .sort_values(ascending=True)
                     )
-                elif self.method == 'median':
+                elif self.method_ == 'median':
                     sorted_variables = (
                         dataframe.groupby([col])['SalePrice']
                         .median()
@@ -205,17 +345,28 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
                     )
 
                 encoding = {k: i for i, k in enumerate(sorted_variables.index)}
-                self.encoder[col] = encoding
+                self.encoder_[col] = encoding
         return self
 
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """ Maps integer encodings to the categories in ascending order.
+
+        Args:
+            X (pd.DataFrame): Pandas DataFrame.
+
+        Returns:
+            DataFrame: Returns DataFrame with mapped variables.
+
+        Raises:
+            KeyError: If columns specified in variables weren't found in DataFrame.
+        """
         X = X.copy()
-        for col in self.variables:
+        for col in self.variables_:
             if col in X.columns:
-                X[col] = X[col].map(self.encoder[col])
+                X[col] = X[col].map(self.encoder_[col])
             else:
-                raise KeyError(f"Column {col} does not exist")
+                raise KeyError(f"Column {col} does not exist in DataFrame")
         return X
 
 
@@ -223,28 +374,54 @@ class MathFunctionTransformer(BaseEstimator, TransformerMixin):
     """
     Applies a mathematical function to specified variables.
 
-    variables: List[str]
-        List of variables
-    func: str
-        Name of the function to apply ('log', 'sqrt', 'exp', etc.)
+    Attributes:
+        variables_ (List[str]): List of variables.
+        func_ (str): Name of the function to apply ('log', 'sqrt', 'exp').
     """
-    def __init__(self, variables: List[str], func: str):
-            self.variables = variables
-            self.func = func
+    def __init__(self, variables: List[str], func: str) -> None:
+        """ Initializes MathFunctionTransformer
 
-            if not isinstance(variables, list):
-                raise TypeError("Variables must be a list")
-            if not isinstance(func, str):
-                raise TypeError("Func must be a str")
-            if self.func not in ['log', 'exp', 'sqrt']:
-                raise ValueError("Function not supported. Choose from ['log', 'exp', 'sqrt']")
+        Args:
+            variables (List[str]): List of variables.
+            func: Function to apply transformation ('log', 'sqrt', 'exp').
+
+        Raises:
+            TypeError: If variables is not a list or func a string.
+            ValueError: If func is not equal to 'log', 'exp' or 'sqrt'.
+        """
+        if not isinstance(variables, list):
+            raise TypeError("Variables must be a list")
+        if not isinstance(func, str):
+            raise TypeError("Func must be a str")
+        if func not in ['log', 'exp', 'sqrt']:
+            raise ValueError("Function not supported. Choose from ['log', 'exp', 'sqrt']")
+
+        self.variables_ = variables
+        self.func_ = func
 
     def fit(self, X: pd.DataFrame, y: pd.Series = None) -> 'MathFunctionTransformer':
+        """ This step doesn't perform any action
+
+        Args:
+            X (pd.DataFrame): Input DataFrame.
+            y (pd.Series): Input Series.
+        Returns:
+            MathFunctionTransformer: Returns fitted transformer.
+        """
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """ Transform specified variables values base on specified function
+
+        Args:
+            X (pd.DataFrame): Input Pandas.
+        Returns:
+            DataFrame: Returns DataFrame with transformed variables values.
+        Raises:
+            KeyError: If column specified in variables_ wasn't found in DataFrame.
+        """
         X = X.copy()
-        for col in self.variables:
+        for col in self.variables_:
             if col in X.columns:
                 if col == 'log':
                     X[col] = np.log(X[col])
@@ -259,23 +436,56 @@ class MathFunctionTransformer(BaseEstimator, TransformerMixin):
 
 class CustomBinarizer(BaseEstimator, TransformerMixin):
     """
-    Binarizes variables values based on a threshold.
+    Binarizes variables values based on a specified threshold.
 
-    variables: List[str]
-        List of variables
-    threshold: float = 0
-        Threshold value for binarization
+    Attributes:
+        variables_ (List[str]): List of variables
+        threshold_ (Union[int, float]): Threshold value for binarization.
     """
     def __init__(self, variables: List[str], threshold: Union[int, float] = 0):
-        self.variables = variables
-        self.threshold = threshold
+        """ Initializes CustomBinarizer
+
+        Args:
+            variables (List[str]): List of variables.
+            threshold (Union[int, float]): Threshold value for binarizartion. By default, its equal to 0.
+
+        Raises:
+             TypeError: If variables is not a list or threshold a number.
+             ValueError: If a threshold is lower than 0 or greater than 1.
+        """
+        if not isinstance(variables, list):
+            raise TypeError("variables must be a list")
+        if not isinstance(threshold, (int, float)):
+            raise TypeError("threshold must be an int or float")
+        if threshold < 0 or threshold > 1:
+            raise ValueError("threshold must be greater than 0 or lower than 1")
+
+        self.variables_ = variables
+        self.threshold_ = threshold
 
     def fit(self, X: pd.DataFrame, y: pd.Series = None) -> 'CustomBinarizer':
+        """This step doesn't perform any action
+
+        Args:
+            X (pd.DataFrame): Input DataFrame.
+            y (pd.Series): Input Series.
+
+        Returns:
+            CustomBinarizer: Returns fitted transformer.
+        """
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Binarize values to 1. Values equal to 0 remain unchanged.
+
+        Args:
+            X (pd.DataFrame): Input DataFrame
+
+        Returns:
+            DataFrame: Returns DataFrame with binarized variables.
+        """
         X = X.copy()
-        for col in self.variables:
+        for col in self.variables_:
             if col in X.columns:
                 X[col] = np.where(X[col] > 0, 1, 0)
             else:

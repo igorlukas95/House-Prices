@@ -1,7 +1,7 @@
 pipeline_name: house_price_model
 model: house_price_model
-training_data: train.csv
-testing_data: test.csv
+training_data: Xuehang/House_Prices_Advanced_Regression_Techniques
+testing_data: Xuehang/House_Prices_Advanced_Regression_Techniques
 pipeline_save_file: regression_model_output_v
 
 target: SalePrice
@@ -21,7 +21,6 @@ categorical_vars_imputing_with_missing:
 
 temporal_variables:
   - YearRemodAdd
-
 
 variables_to_rename:
   1stFlrSF: FirstFlrSF
