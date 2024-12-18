@@ -68,7 +68,7 @@ class TestCustomSimpleImpute:
     def transformer(self, sample_dataframe):
         return CustomSimpleImpute(variables=list(sample_dataframe.columns), imputation='mean')
 
-    def test_custom_simple_transformer_impute_invalid_imputation_type(self, sample_dataframe):
+    def test_custom_simple_transformer_impute_invalid_imputation_type(self, transformer, sample_dataframe):
         with pytest.raises(TypeError):
             CustomSimpleImpute(variables=list(sample_dataframe.columns), imputation=int)
 
@@ -91,7 +91,7 @@ class TestCustomSimpleImpute:
         transformer.fill_values_ = fill_values_
 
         with pytest.raises(TypeError):
-            CustomSimpleImpute.fit(sample_dataframe['BsmtFinSF1'])
+            transformer.fit(sample_dataframe)
 
     @pytest.mark.parametrize("imputation_, fill_values_", get_invalid_parameters())
     def test_custom_simple_transformer_invalid_fill_values_if_fill_value_is_numeric_and_variable_is_category(self,
@@ -103,7 +103,7 @@ class TestCustomSimpleImpute:
         transformer.fill_values_ = fill_values_
 
         with pytest.raises(TypeError):
-            CustomSimpleImpute.fit(sample_dataframe['BsmtQual'])
+            transformer.fit(sample_dataframe)
 
     def test_custom_simple_tranformer_if_calculates_correctly_mean(self, sample_dataframe, transformer):
         transformer.variables_ = ['BsmtFinSF1']
@@ -245,4 +245,3 @@ class TestRareLabelsEncoder:
                 'OpenPorchSF': []
             }
         )
-    def test_if_function_will_raise_error_if_variable_are_not_a_list(self):
