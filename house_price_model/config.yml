@@ -87,6 +87,7 @@ exposure_mapping:
   Av: 3
   Gd: 4
   NA: 0
+  NaN: 0
   Missing: 0
 
 garagefinish_mapping:

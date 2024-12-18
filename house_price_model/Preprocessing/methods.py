@@ -12,6 +12,7 @@ class TemporalVariableTransformer(BaseEstimator, TransformerMixin):
         reference_str_ (str): Name of variable to be subtracted from datetime variables.
 
     """
+
     def __init__(self, variables: List[str], reference_str: str) -> None:
         """Initializes the TemporalVariableTransformer
 
@@ -31,7 +32,6 @@ class TemporalVariableTransformer(BaseEstimator, TransformerMixin):
         self.variables_ = variables
         self.reference_str_ = reference_str
 
-
     def fit(self, X: pd.DataFrame, y: pd.Series = None) -> 'TemporalVariableTransformer':
         """This step doesn't perform any action.
 
@@ -44,7 +44,6 @@ class TemporalVariableTransformer(BaseEstimator, TransformerMixin):
         """
         return self
 
-
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """ Subtract reference variable with datetime column.
 
@@ -53,13 +52,17 @@ class TemporalVariableTransformer(BaseEstimator, TransformerMixin):
 
         Returns:
             DataFrame: Returns DataFrame with transformed datetime variables.
+
+        Raises:
+            KeyError: If column wasn't found in DataFrame
         """
         X = X.copy()
+
         for col in self.variables_:
-            if col in X.columns:
+            if isinstance(col, str) and col in X.columns:
                 X[col] = X[self.reference_str_] - X[col]
             else:
-                raise KeyError("Column {col} was not found in DataFrame")
+                raise KeyError(f"Column {col} was not found in DataFrame")
         return X
 
 
@@ -77,6 +80,7 @@ class CustomSimpleImpute(BaseEstimator, TransformerMixin):
 
         encoder_ (Dict[str, Union[str, float, int]]): Dictionary storing variable names and values corresponding to imputed values used for imputation.
     """
+
     def __init__(self, variables: List[str], imputation: str = "mean", fill_values: Union[int, float, str] = "Missing"):
         """ Initializes the CustomSimpleImpute
 
@@ -84,16 +88,27 @@ class CustomSimpleImpute(BaseEstimator, TransformerMixin):
             variables (List[str]): List of variables to be imputed.
             imputation (str): Imputation method.
             fill_values (Union[int, float, str]): The fixed value used for filling missing values when imputation method is "constant".
+
+        Raises:
+            TypeError: If variables aren't a list, imputation a string or fill_value a (int, float, str)
+            ValueError: If imputation isn't a (int, float, str)
         """
+        if not isinstance(variables, list):
+            raise TypeError("Variables must be a list")
+        if not isinstance(imputation, str):
+            raise TypeError("imputation must be a str")
+        if imputation not in ["mean", "median", "constant", "most_frequent"]:
+            raise ValueError("imputation must be following values ['mean', 'median', 'constant', 'most_frequent']")
+        if not isinstance(fill_values, (int, float, str)):
+            raise TypeError("fill_value must best int, float or str")
+
+
         self.variables_ = variables
         self.imputation_ = imputation
         self.fill_values_ = fill_values
         self.encoder_: Dict[str, Union[str, float, int]] = {}
 
-        if not isinstance(variables, list):
-            raise TypeError("Variables must be a list")
-        if self.imputation_ not in ["mean", "median", "constant", "most_frequent"]:
-            raise ValueError("Imputation must be following values ['mean', 'median', 'constant', 'most_frequent']")
+
 
     def fit(self, X: pd.DataFrame, y: pd.Series = None) -> 'CustomSimpleImpute':
         """ Calculates the central tendency values for each variable.
@@ -103,19 +118,30 @@ class CustomSimpleImpute(BaseEstimator, TransformerMixin):
 
         Returns:
             CustomSimpleImpute: Returns fitted transformer.
+
+        Raises:
+            KeyError: If column wasn't found in Dataframe
+            TypeError: If column of a specific type can't be used with specific imputation
         """
         for col in self.variables_:
-            if col in X.columns:
+            if col not in X.columns:
+                raise KeyError(f"Column {col} not find in DataFrame")
+
+            if X[col].dtypes in ['float64', 'int64']:
                 if self.imputation_ == "mean":
-                    self.encoder_[col] = X[col].mean()
+                    self.encoder_[col] = round(X[col].mean(), 1)
                 elif self.imputation_ == "median":
-                    self.encoder_[col] = X[col].median()
-                elif self.imputation_ == "most_frequent":
-                    self.encoder_[col] = X[col].mode()[0]
+                    self.encoder_[col] = round(X[col].median(), 1)
+                else:
+                    raise TypeError(f"Column {col} of type {X[col].dtypes} cannot be used with {self.imputation_}")
+
+            elif X[col].dtypes in ['object', 'category']:
+                if self.imputation_ == "most_frequent":
+                        self.encoder_[col] = X[col].mode()[0]
                 elif self.imputation_ == "constant":
-                    self.encoder_[col] = self.fill_values_
-            else:
-                raise KeyError(f"Column {col} was not found in DataFrame")
+                        self.encoder_[col] = self.fill_values_
+                else:
+                    raise TypeError(f"Column {col} of type {X[col].dtypes} cannot be used with {self.imputation_}")
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -129,7 +155,7 @@ class CustomSimpleImpute(BaseEstimator, TransformerMixin):
             DataFrame: Returns DataFrame with missing values filler for specified columns.
 
         Raises:
-            Keyword: If column specified in variables wasn't found in DataFrame.
+            KeyError: If column specified in variables wasn't found in DataFrame.
         """
         for col in self.variables_:
             if col in X.columns:
@@ -147,6 +173,7 @@ class Mapper(BaseEstimator, TransformerMixin):
         variables_ (List[str]): List of categorical variables
         mapping_ (Dict[str, int]): Dictionary with mapping.
     """
+
     def __init__(self, variables: List[str], mapping: Dict[str, int]) -> None:
         """ Initializes Mapper
 
@@ -156,16 +183,21 @@ class Mapper(BaseEstimator, TransformerMixin):
 
         Raises:
             TypeError: If variables is not a list or mapping a dictionary.
+            ValueError: If mapping keys aren't string or values aren't integers
         """
         self.variables_ = variables
         self.mapping_ = mapping
 
         if not isinstance(variables, list):
-            raise TypeError("Variables is not a list")
+            raise TypeError("variables is not a list")
         if not isinstance(mapping, dict):
-            raise TypeError("Mapping is not a dictionary")
+            raise TypeError("mapping is not a dictionary")
+        if not all(isinstance(keys, str) for keys in mapping.keys()):
+            raise ValueError("mapping key must be a string")
+        if not all(isinstance(values, int) for values in mapping.values()):
+            raise ValueError("mapping value must be an integer")
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> 'Mapper':
+    def fit(self, X: pd.DataFrame, y: pd.Series = None) -> 'Mapper':
         """This step doesn't perform any action.
         Args:
             X (pd.DataFrame): Input DataFrame
@@ -186,16 +218,15 @@ class Mapper(BaseEstimator, TransformerMixin):
             DataFrame: Returns DataFrame with mapped variables values.
 
         Raises:
-            Keyword: If variable specified in variables_ was not found in DataFrame.
+            Keyword: If variable specified in variables_ wasn't found in DataFrame.
         """
         X = X.copy()
         for col in self.variables_:
             if col in X.columns:
-                X[col] = X[col].map(self.mapping_)
+                X[col] = X[col].map(self.mapping_).fillna(0).astype(int)
             else:
                 raise KeyError(f"Column {col} was not found in DataFrame")
         return X
-
 
 
 class RareLabelsEncoder(BaseEstimator, TransformerMixin):
@@ -203,10 +234,11 @@ class RareLabelsEncoder(BaseEstimator, TransformerMixin):
     Encodes categories with frequency below a threshold as Rare.
 
     Attributes:
-        variables_ (List[str]): List of variable
+        variables_ (List[str]): List of a variables
         threshold_ (float): The minimum frequency required for a variable to be included in a returned list. By default, is equal to 0.01.
         encoder_ (dict): Dictionary with variables names and corresponding values divided into saved and changed to 'Rare'.
     """
+
     def __init__(self, variables: List[str], threshold: float = 0.01) -> None:
         """ Initializes RareLabelsEncoder
 
@@ -225,8 +257,8 @@ class RareLabelsEncoder(BaseEstimator, TransformerMixin):
             raise TypeError("Variables is not a list")
         if not isinstance(threshold, float):
             raise TypeError("Threshold must be a floating number")
-        if threshold < 0.0 or threshold> 1.0:
-            raise ValueError("Threshold must be between 0 and 100")
+        if threshold < 0.0 or threshold > 1.0:
+            raise ValueError("Threshold must be between 0 and 1")
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> 'RareLabelsEncoder':
         """Calculates frequency of each value in specified variable
@@ -283,7 +315,6 @@ class RareLabelsEncoder(BaseEstimator, TransformerMixin):
         return X
 
 
-
 class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
     """
     Encodes categories based on target in ascending order.
@@ -293,6 +324,7 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
         method_ (str): Measures of a central tendency.
         encoder_ (Dict[str, dict]): Dictionary storing variables names as keys and numbers as values in monotonic order base on Target.
     """
+
     def __init__(self, variables: List[str], method: str = 'mean') -> None:
         """Initializes MonotonicOrdinalEncoder
 
@@ -348,7 +380,6 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
                 self.encoder_[col] = encoding
         return self
 
-
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """ Maps integer encodings to the categories in ascending order.
 
@@ -378,6 +409,7 @@ class MathFunctionTransformer(BaseEstimator, TransformerMixin):
         variables_ (List[str]): List of variables.
         func_ (str): Name of the function to apply ('log', 'sqrt', 'exp').
     """
+
     def __init__(self, variables: List[str], func: str) -> None:
         """ Initializes MathFunctionTransformer
 
@@ -442,6 +474,7 @@ class CustomBinarizer(BaseEstimator, TransformerMixin):
         variables_ (List[str]): List of variables
         threshold_ (Union[int, float]): Threshold value for binarization.
     """
+
     def __init__(self, variables: List[str], threshold: Union[int, float] = 0):
         """ Initializes CustomBinarizer
 
@@ -492,3 +525,6 @@ class CustomBinarizer(BaseEstimator, TransformerMixin):
                 raise KeyError(f"Column {col} does not exist")
         return X
 
+
+if __name__ == "__main__":
+   pass
