@@ -53,17 +53,14 @@ class TestLoadDataset:
 
 
 class TestOperationOnPipelines:
-    """Test pipeline loading, saving and removing operations"""
 
     @pytest.fixture
     def temporary_directory(self):
-        """Create temporary directory"""
         with tempfile.TemporaryDirectory() as file:
             yield file
 
     @patch('joblib.load')
     def test_if_pipeline_is_correctly_loaded(self, mock_pipe):
-        """Testing if a pipeline returned by 'load_pipeline' matches a mocked pipeline"""
         pipeline_mock = MagicMock()
 
         mock_pipe.return_value = pipeline_mock

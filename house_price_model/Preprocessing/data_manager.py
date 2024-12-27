@@ -20,7 +20,7 @@ def load_datasets(*, mode: str = 'train') -> pd.DataFrame:
         pd.DataFrame: DataFrame with Advanced House Price dataset.
     """
 
-    dataset = load_dataset(_config.config_app.training_data, mode)
+    dataset = load_dataset(_config.config_app.dataset, mode)
 
     if isinstance(dataset[f'{mode}'], pd.DataFrame):
         return dataset[f'{mode}']
@@ -31,10 +31,10 @@ def load_datasets(*, mode: str = 'train') -> pd.DataFrame:
 
 
 def load_pipeline(*, path: Path) -> Pipeline:
-    """Loads saved pipeline
+    """Loads saved a pipeline
 
     Args:
-        path (Path): Path to pipeline model.
+        path (Path): Path to a pipeline model.
 
     Returns:
         Pipeline: Pipeline model.

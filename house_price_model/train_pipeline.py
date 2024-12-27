@@ -8,7 +8,7 @@ from house_price_model.pipeline import pipeline
 def train_pipeline() -> None:
     """Train Pipeline
 
-    This function loads training dataset, renames variables that names starts with number, splits data,
+    This function loads training dataset, renames variables that names start with number, splits data,
     perform logarithmic transformation on target, train and saves a pipeline in specified folder.
     """
     dataframe = load_datasets(mode='train')
@@ -26,7 +26,7 @@ def train_pipeline() -> None:
     pipeline.fit(X_train, y_train)
 
     save_pipeline(pipeline=pipeline)
-
+  
 
 if __name__ == "__main__":
     train_pipeline()

@@ -28,8 +28,6 @@ class TemporalVariableTransformer(BaseEstimator, TransformerMixin):
             raise TypeError("Variables should be a list")
         if not isinstance(reference_str, str):
             raise TypeError("Reference should be a string")
-        if reference_str not in variables:
-            raise KeyError("reference_str is not found in variables")
 
         self.variables_ = variables
         self.reference_str_ = reference_str
@@ -370,9 +368,7 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
                     )
                 elif self.method_ == 'median':
                     sorted_variables = (
-                        dataframe.groupby([col])[y.name]
-                        .median()
-                        .sort_values(ascending=True)
+                        dataframe.groupby([col])[y.name].median().sort_values(ascending=True)
                     )
 
                 encoding = {k: i for i, k in enumerate(sorted_variables.index)}
