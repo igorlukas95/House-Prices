@@ -1,8 +1,31 @@
 ﻿import numpy as np
 import pytest
 import pandas as pd
-from house_price_model.Preprocessing.methods import TemporalVariableTransformer, CustomSimpleImpute, Mapper
+from house_price_model.Preprocessing.methods import (TemporalVariableTransformer, CustomSimpleImpute, Mapper,
+                                                     RareLabelsEncoder, MonotonicOrdinalEncoder,
+                                                     MathFunctionTransformer,
+                                                     CustomBinarizer)
 from house_price_model.Config.core import _config
+
+
+def raises_error(error,
+                 transformer,
+                 variables,
+                 dataframe=None,
+                 fit_data=False,
+                 y_obligatory=None,
+                 target=None,
+                 **kwargs):
+    if fit_data:
+        if y_obligatory:
+            with pytest.raises(error):
+                transformer(variables=variables, **kwargs).fit_transform(dataframe.drop(target), axis=1)
+        else:
+            with pytest.raises(error):
+                transformer(variables=variables, **kwargs).fit_transform(dataframe)
+    else:
+        with pytest.raises(error):
+            transformer(variables=variables, **kwargs)
 
 
 class TestTemporalVariableTransformer:
@@ -19,16 +42,18 @@ class TestTemporalVariableTransformer:
         )
 
     def test_invalid_reference_str_key(self, sample_datetime_dataframe):
-        transformer = TemporalVariableTransformer(
-            variables=list(sample_datetime_dataframe.drop('YrSold', axis=1).columns), reference_str='invalid_str')
-        with pytest.raises(KeyError):
-            transformer.fit_transform(sample_datetime_dataframe)
+        raises_error(error=KeyError,
+                     transformer=TemporalVariableTransformer,
+                     variables=list(sample_datetime_dataframe.columns),
+                     reference_str='Invalid_Key')
 
-    def test_if_variable_is_not_found(self, sample_datetime_dataframe):
-        transformers = TemporalVariableTransformer(variables=['YearBuild', 'GarageYrBlt', 'Invalid_Columns'],
-                                                   reference_str='YrSold')
-        with pytest.raises(KeyError):
-            transformers.fit_transform(sample_datetime_dataframe)
+    def test_if_variable_name_is_invalid(self, sample_datetime_dataframe):
+        raises_error(error=KeyError,
+                     transformer=TemporalVariableTransformer,
+                     variables=['YearBuilt', 'YearRemodAdd', 'InvalidColumn', 'YrSold'],
+                     reference_str='YrSold',
+                     fit_data=True,
+                     dataframe=sample_datetime_dataframe)
 
     def test_if_temporal_transformer_calculates_correctly_datetimes(self, sample_datetime_dataframe):
         expected_dataframe = pd.DataFrame(
@@ -66,20 +91,28 @@ class TestCustomSimpleImpute:
 
     @pytest.fixture
     def transformer(self, sample_dataframe):
-        return CustomSimpleImpute(variables=list(sample_dataframe.columns), imputation='mean')
+        return CustomSimpleImpute(variables=list(sample_dataframe.columns),
+                                  imputation='mean')
 
     def test_custom_simple_transformer_impute_invalid_imputation_type(self, transformer, sample_dataframe):
-        with pytest.raises(TypeError):
-            CustomSimpleImpute(variables=list(sample_dataframe.columns), imputation=int)
+        raises_error(TypeError,
+                     CustomSimpleImpute,
+                     variables=list(sample_dataframe.columns),
+                     imputation=int)
 
     def test_custom_simple_transformer_invalid_imputation_key(self, sample_dataframe):
-        with pytest.raises(ValueError):
-            CustomSimpleImpute(variables=list(sample_dataframe.columns), imputation='invalid_imputation')
+        raises_error(ValueError,
+                     CustomSimpleImpute,
+                     variables=list(sample_dataframe.columns),
+                     imputation="invalid")
 
     def test_custom_simple_transformer_invalid_column_name(self, sample_dataframe, transformer):
-        sample_dataframe.columns = ['InvalidQual', 'FireplaceQu']
-        with pytest.raises(KeyError):
-            transformer.fit_transform(sample_dataframe)
+        variables_ = ['InvalidQual', 'FireplaceQu']
+        raises_error(KeyError, CustomSimpleImpute,
+                     variables=variables_,
+                     dataframe=sample_dataframe,
+                     fit_data=True,
+                     imputation="constant")
 
     @pytest.mark.parametrize("imputation_, fill_values_", get_invalid_parameters())
     def test_custom_simple_transformer_invalid_if_fill_value_type_is_string_and_variable_is_numeric(self,
@@ -90,22 +123,31 @@ class TestCustomSimpleImpute:
         transformer.imputation_ = imputation_
         transformer.fill_values_ = fill_values_
 
-        with pytest.raises(TypeError):
-            transformer.fit(sample_dataframe)
+        raises_error(TypeError, transformer=CustomSimpleImpute,
+                     variables=list(sample_dataframe.columns),
+                     dataframe=sample_dataframe,
+                     fit_data=True,
+                     imputation=imputation_,
+                     fill_values_=fill_values_)
 
     @pytest.mark.parametrize("imputation_, fill_values_", get_invalid_parameters())
-    def test_custom_simple_transformer_invalid_fill_values_if_fill_value_is_numeric_and_variable_is_category(self,
-                                                                                                             sample_dataframe,
-                                                                                                             transformer,
-                                                                                                             imputation_,
-                                                                                                             fill_values_):
+    def test_custom_simple_transformer_raise_error_if_fill_value_is_numeric_and_variable_is_category(self,
+                                                                                                     sample_dataframe,
+                                                                                                     transformer,
+                                                                                                     imputation_,
+                                                                                                     fill_values_):
         transformer.imputation_ = imputation_
         transformer.fill_values_ = fill_values_
 
-        with pytest.raises(TypeError):
-            transformer.fit(sample_dataframe)
+        raises_error(TypeError,
+                     transformer=CustomSimpleImpute,
+                     variables=list(sample_dataframe.columns),
+                     dataframe=sample_dataframe,
+                     fit_data=True,
+                     imputation=imputation_,
+                     fill_values_=fill_values_)
 
-    def test_custom_simple_tranformer_if_calculates_correctly_mean(self, sample_dataframe, transformer):
+    def test_custom_simple_transformer_if_calculates_correctly_mean(self, sample_dataframe, transformer):
         transformer.variables_ = ['BsmtFinSF1']
 
         transformer.fit(sample_dataframe)
@@ -193,46 +235,52 @@ class TestMapper:
 
     @pytest.fixture
     def transformer(self, dataframe, mapping):
-        return Mapper(variables=list(dataframe.columns), mapping=mapping)
+        return Mapper(variables=list(dataframe.columns),
+                      mapping=mapping)
 
     @pytest.mark.parametrize("variables_", ({}, (), "string", 10, 21.4, set()))
-    def test_if_function_will_raise_error_if_variables_is_not_a_list(self, variables_, mapping):
-        with pytest.raises(TypeError):
-            Mapper(variables=variables_, mapping=mapping)
+    def test_if_mapper_will_raise_error_if_variables_is_not_a_list(self, variables_, mapping):
+        raises_error(TypeError,
+                     transformer=Mapper,
+                     variables=variables_,
+                     mapping=mapping)
 
     @pytest.mark.parametrize("mapping_", ([], (), "mapping", 21, 0.321, set()))
-    def test_if_mapping_will_raise_error_if_passed_value_is_not_a_dict(self, dataframe, mapping_):
-        with pytest.raises(TypeError):
-            Mapper(variables=list(dataframe.columns), mapping=mapping_)
+    def test_if_mapper_will_raise_error_if_mapping_passed_value_is_not_a_dict(self, dataframe, mapping_):
+        raises_error(TypeError,
+                     transformer=Mapper,
+                     variables=list(dataframe.columns),
+                     mapping=mapping_)
 
     @pytest.mark.parametrize("mapping_", ({'BsmtQual': '1'}, {2: 'string'}, {3: 31}))
-    def test_if_function_will_raise_error_if_mapping_keys_are_not_strings_and_mapping_values_an_intigers(self, dataframe,
-                                                                                               mapping_):
-        with pytest.raises(ValueError):
-            Mapper(variables=list(dataframe.columns), mapping=mapping_)
+    def test_if_mapper_will_raise_error_if_mapping_keys_are_not_strings_and_mapping_values_an_intiger(self,
+                                                                                                      dataframe,
+                                                                                                      mapping_):
+        raises_error(ValueError,
+                     transformer=Mapper,
+                     variables=list(dataframe.columns),
+                     mapping=mapping_)
 
-    def test_if_function_will_raise_error_if_variable_was_not_found_in_dataframe(self, transformer, dataframe):
-        transformer.variables_ = ['ExterQual', 'ExterCond', 'BsmtQual', 'Invalid']
-        with pytest.raises(KeyError):
-            transformer.fit_transform(dataframe)
+    def test_if_mapper_will_raise_error_if_variable_was_not_found_in_dataframe(self, transformer, dataframe, mapping):
+        variables_ = ['ExterQual', 'ExterCond', 'BsmtQual', 'Invalid']
+        raises_error(KeyError, transformer=Mapper,
+                     variables=variables_,
+                     dataframe=dataframe,
+                     fit_data=True,
+                     mapping=mapping)
 
-
-
-    def test_if_function_maps_correctly(self, transformer, dataframe):
-
+    def test_if_mapper_maps_correctly(self, transformer, dataframe):
         expected_dataframe = pd.DataFrame(
-                {
-                    'ExterQual': [3, 4, 5, 2, 3, 4, 4],
-                    'ExterCond': [3, 4, 2, 5, 1, 1, 1],
-                    'BsmtQual': [3, 4, 5, 2, 0, 3, 1],
-                    'BsmtCond': [3, 4, 2, 1, 0, 4, 0]
-                }
+            {
+                'ExterQual': [3, 4, 5, 2, 3, 4, 4],
+                'ExterCond': [3, 4, 2, 5, 1, 1, 1],
+                'BsmtQual': [3, 4, 5, 2, 0, 3, 1],
+                'BsmtCond': [3, 4, 2, 1, 0, 4, 0]
+            }
         )
 
-
-        transformed_dataframe = transformer.fit_transform(dataframe)
+        transformed_dataframe = transformer.fit_transform(dataframe).astype(np.int64)
         pd.testing.assert_frame_equal(transformed_dataframe, expected_dataframe)
-
 
 
 class TestRareLabelsEncoder:
@@ -240,8 +288,218 @@ class TestRareLabelsEncoder:
     def dataframe(self):
         return pd.DataFrame(
             {
-                'BsmtFinSF1': [],
-                'WoodDeckSF': [],
-                'OpenPorchSF': []
+                'MSZoning': ['RL', 'RL', 'FV', 'FV', 'RH', 'RL', 'RM', 'C (all)', 'FV', 'RH'],
+                'LotShape': ['Reg', 'IR1', 'IR2', 'IR1', 'Reg', 'IR1', 'IR2', 'IR3', 'Reg', 'Reg'],
+                'LotConfig': ['Inside', 'Inside', 'CulDSac', 'CulDSac', 'FR3', 'Inside', 'Corner', 'CulDSac', 'FR2',
+                              'FR2']
             }
         )
+
+    @pytest.mark.parametrize("variables", ({}, set(), 312, 1.2, "invalid"))
+    def test_if_encoder_will_raise_error_if_variables_is_not_a_list(self, dataframe, variables):
+        raises_error(TypeError,
+                     RareLabelsEncoder,
+                     variables,
+                     threshold=0.01)
+
+    @pytest.mark.parametrize("threshold", ("string", {}, set()))
+    def test_if_encoder_will_raise_error_if_threshold_is_not_a_float(self, dataframe, threshold):
+        raises_error(TypeError,
+                     RareLabelsEncoder,
+                     variables=list(dataframe.columns),
+                     threshold=threshold)
+
+    @pytest.mark.parametrize("threshold", (12.0, 1.1, -21.0, -0.1))
+    def test_if_encoder_will_raise_error_if_threshold_is_out_of_scope(self, dataframe, threshold):
+        raises_error(ValueError,
+                     RareLabelsEncoder,
+                     variables=list(dataframe.columns),
+                     threshold=threshold)
+
+    def test_if_encoder_will_raise_error_if_variable_was_not_found_in_dataframe(self, dataframe):
+        wrong_variables = ["WoodInvalid", "OpenPorchSF", "BsmtFinSF1"]
+        raises_error(KeyError, RareLabelsEncoder,
+                     variables=wrong_variables,
+                     threshold=0.01,
+                     fit_data=True,
+                     dataframe=dataframe)
+
+    def test_if_encoder_correctly_encodes_rare_labels(self, dataframe):
+        transformer = RareLabelsEncoder(variables=list(dataframe.columns),
+                                        threshold=0.2)
+
+        expected_dataframe = pd.DataFrame(
+            {
+                'MSZoning': ['RL', 'RL', 'FV', 'FV', 'RH', 'RL', 'Rare', 'Rare', 'FV', 'RH'],
+                'LotShape': ['Reg', 'IR1', 'IR2', 'IR1', 'Reg', 'IR1', 'IR2', 'Rare', 'Reg', 'Reg'],
+                'LotConfig': ['Inside', 'Inside', 'CulDSac', 'CulDSac', 'Rare', 'Inside', 'Rare', 'CulDSac', 'FR2',
+                              'FR2']
+            }
+        )
+
+        transformed_dataframe = transformer.fit_transform(dataframe)
+
+        pd.testing.assert_frame_equal(expected_dataframe, transformed_dataframe)
+
+
+class TestMonotonicOrdinalEncoder:
+
+    @pytest.fixture
+    def dataframe(self):
+        return pd.DataFrame(
+            {
+                'MSZoning': ['RL', 'RL', 'FV', 'FV', 'RH', 'RL', 'RM', 'C (all)', 'FV', 'RH'],
+                'LotShape': ['Reg', 'Reg', 'IR2', 'IR2', 'IR1', 'Reg', 'IR2', 'IR3', 'IR2', 'IR1'],
+                'LotConfig': ['Inside', 'Inside', 'CulDSac', 'CulDSac', 'FR3', 'Inside', 'Corner', 'FR2', 'CulDSac',
+                              'FR2'],
+                'SalePrice': [192000, 187000, 160000, 167000, 174000, 199000, 132000, 215000, 165000, 176000]
+            }
+        )
+
+    @pytest.mark.parametrize("variables_", ({}, set(), "string", 10, ()))
+    def test_if_ordinal_encoder_raise_error_if_variables_is_not_a_list(self, variables_):
+        raises_error(TypeError,
+                     MonotonicOrdinalEncoder,
+                     variables=variables_,
+                     method="mean")
+
+    @pytest.mark.parametrize("methods_", ({}, set(), 10, 12.3, []))
+    def test_if_ordinal_encoder_raise_error_if_method_is_not_a_str(self, methods_, dataframe):
+        raises_error(TypeError,
+                     MonotonicOrdinalEncoder,
+                     variables=list(dataframe.columns),
+                     method=methods_)
+
+    def test_if_ordinal_encoder_raise_error_if_method_is_not_median_or_mean(self, dataframe):
+        raises_error(ValueError,
+                     MonotonicOrdinalEncoder,
+                     variables=list(dataframe.columns),
+                     method="invalid_method")
+
+    def test_if_ordinal_encoder_raise_error_if_variable_is_not_in_dataframe(self, dataframe):
+        variables_ = ["LotShape", "LotConfig", "SalePrice", "MSZoningInvalid"]
+        raises_error(KeyError, MonotonicOrdinalEncoder,
+                     variables=variables_,
+                     method="mean",
+                     dataframe=dataframe,
+                     fit_data=True,
+                     y_obligatory=True,
+                     target='SalePrice')
+
+    def test_if_ordinal_encoder_will_correctly_calculate_monotonic_encoder(self, dataframe):
+        transformer = MonotonicOrdinalEncoder(variables=list(dataframe.columns),
+                                              method="mean")
+
+        expected_dataframe = pd.DataFrame({
+            "MSZoning": [3, 3, 1, 1, 2, 3, 0, 4, 1, 2],
+            "LotShape": [2, 2, 0, 0, 1, 2, 0, 3, 0, 1],
+            "LotConfig": [3, 3, 1, 1, 2, 3, 0, 4, 1, 4],
+            "SalePrice": [192000, 187000, 160000, 167000, 174000, 199000, 132000, 215000, 165000, 176000]
+        })
+
+        transformed_variables = transformer.fit_transform(dataframe.drop('SalePrice', axis=1), dataframe['SalePrice'])
+
+        pd.testing.assert_frame_equal(expected_dataframe, transformed_variables)
+
+
+class TestMathFunctionTranformer:
+    @pytest.fixture
+    def dataframe(self):
+        return pd.DataFrame(
+            {
+                "LotArea": [1000, 2000, 3000, 4000, 5000],
+                "FirstFlrSF": [1500, 2500, 3500, 4500, 5500],
+                "GrLivArea": [2000, 3000, 4000, 5000, 6000]
+            }
+        )
+
+    @pytest.fixture
+    def transformer(self, dataframe):
+        return MathFunctionTransformer(variables=list(dataframe.columns), func="exp")
+
+    @pytest.mark.parametrize("variables_", (set(), {}, 10, 12.1, "string", ()))
+    def test_if_math_transformer_will_raise_error_if_variables_are_not_list(self, variables_):
+        raises_error(error=TypeError,
+                     transformer=MathFunctionTransformer,
+                     variables=variables_,
+                     func="exp")
+
+    @pytest.mark.parametrize("func_", (set(), {}, 10, 21.1, (), []))
+    def test_if_math_transformer_will_raise_error_if_func_is_not_a_string(self, func_, dataframe):
+        raises_error(error=TypeError,
+                     transformer=MathFunctionTransformer,
+                     variables=list(dataframe.columns),
+                     func=func_)
+
+    def test_if_math_transformer_raise_error_if_func_is_not_log_or_exp_or_sqrt(self, dataframe):
+        raises_error(error=ValueError,
+                     transformer=MathFunctionTransformer,
+                     variables=list(dataframe.columns),
+                     func="invalid")
+
+    def test_if_math_transformer_raise_error_if_variable_is_not_found(self, dataframe):
+        raises_error(error=KeyError,
+                     transformer=MathFunctionTransformer,
+                     variables=['LotArea', 'FirstFlrSF', 'InvalidGrLivArea'],
+                     fit_data=True,
+                     dataframe=dataframe,
+                     func="log")
+
+    def test_if_math_transformer_calculates_logarithm_correctly(self, dataframe, transformer):
+        transformer.func_ = "log"
+        transformed_data = transformer.fit_transform(dataframe)
+        pd.testing.assert_frame_equal(np.log(dataframe), transformed_data)
+
+    def test_if_math_transformer_calculates_exponential_correctly(self, dataframe, transformer):
+        transformer.func_ = "exp"
+        transformed_data = transformer.fit_transform(dataframe)
+        pd.testing.assert_frame_equal(np.exp(dataframe), transformed_data)
+
+    def test_if_math_transformer_calculates_square_correctly(self, dataframe, transformer):
+        transformer.func_ = "sqrt"
+        transformed_data = transformer.fit_transform(dataframe)
+        pd.testing.assert_frame_equal(np.sqrt(dataframe), transformed_data)
+
+
+class TestCustomBinarizer:
+
+    @pytest.fixture
+    def dataframe(self):
+        return pd.DataFrame(
+            {
+                "BsmtFinSF2": [31, 0, 432, 0, 123, 0, 0, 213],
+                "BsmtFinSF1": [312, 321, 0, 0, 231, 0, 21, 32]
+            }
+        )
+
+    @pytest.mark.parametrize("variables_", (21, 232.1, {}, set(), (), "string"))
+    def test_if_custom_binarizer_will_raise_error_if_variables_is_not_a_list(self, dataframe, variables_):
+        raises_error(error=TypeError,
+                     transformer=CustomBinarizer,
+                     variables=variables_,
+                     threshold=0.01)
+
+    @pytest.mark.parametrize("threshold_", ({}, [], set(), (), "string"))
+    def test_if_custom_binarizer_will_raise_error_if_threshold_is_not_a_number(self, dataframe, threshold_):
+        raises_error(error=TypeError,
+                     transformer=CustomBinarizer,
+                     variables=list(dataframe.columns),
+                     threshold=threshold_)
+
+    @pytest.mark.parametrize("threshold_", (-5, -10, -1, 10, 1.2, 1.5, 1000))
+    def test_if_custom_binarizer_will_raise_error_if_threshold_is_out_of_range(self, dataframe, threshold_):
+        raises_error(error=ValueError,
+                     transformer=CustomBinarizer,
+                     variables=list(dataframe.columns),
+                     threshold=threshold_)
+
+
+    def test_if_custom_binarizer_will_raise_error_if_variable_is_not_found(self, dataframe):
+        raises_error(error=ValueError,
+                     transformer=CustomBinarizer,
+                     variables=['invalidColumn', 'BsmtFinSF2'],
+                     threshold=0.1)
+
+
+    def test_if_custom_binarizer_binarize_correctly(self, dataframe):
+        transformer = CustomBinarizer(variables=list(dataframe.columns), threshold=0.1)

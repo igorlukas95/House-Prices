@@ -1,7 +1,6 @@
-﻿from faker import Faker
-import pandas as pd
+﻿import pandas as pd
 import numpy as np
-from sympy.codegen.ast import int64
+
 
 
 def mock_dataframe(num_rows: int = 1460) -> pd.DataFrame:

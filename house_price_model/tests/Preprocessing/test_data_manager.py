@@ -13,6 +13,7 @@ from house_price_model.tests.Mock.dataframe import mock_dataframe
 
 class TestLoadDataset:
     """Test dataset loading functionality"""
+
     @pytest.fixture
     def test_load_dataset(self, mocker):
         return mocker.patch(
@@ -32,7 +33,8 @@ class TestLoadDataset:
         test_load_dataset.assert_called_with(_config.config_app.training_data, 'train')
         assert isinstance(dataframe, pd.DataFrame)
 
-    def test_if_loaded_dataframe_and_mocked_dataframe_are_equal(self, test_load_dataset, return_mock_dataframe, dataframe):
+    def test_if_loaded_dataframe_and_mocked_dataframe_are_equal(self, test_load_dataset, return_mock_dataframe,
+                                                                dataframe):
         """Test if Dataframe returned by 'load_datasets' matches the mocked dataframe"""
         pd.testing.assert_frame_equal(dataframe, mock_dataframe())
 
@@ -46,7 +48,7 @@ class TestLoadDataset:
 
     @patch.object(_config.config_app, 'training_data', 'invalid_file')
     def test_if_incorrect_file_path_will_raise_error(self):
-       with pytest.raises(FileNotFoundError):
+        with pytest.raises(FileNotFoundError):
             load_datasets(mode='train')
 
 
@@ -58,7 +60,6 @@ class TestOperationOnPipelines:
         """Create temporary directory"""
         with tempfile.TemporaryDirectory() as file:
             yield file
-
 
     @patch('joblib.load')
     def test_if_pipeline_is_correctly_loaded(self, mock_pipe):
@@ -73,7 +74,6 @@ class TestOperationOnPipelines:
 
         mock_pipe.assert_called_with(Path(TRAINED_MODEL_DIR / mock_file))
         assert pipeline_mock == pipeline
-
 
     def test_if_incorrect_file_path_for_load_pipeline_will_raise_error(self):
         with pytest.raises(FileNotFoundError):
@@ -93,9 +93,7 @@ class TestOperationOnPipelines:
         mock_dump.assert_called_with(pipeline_mock, path)
         mock_remove.assert_called_once()
 
-
     def test_if_pipeline_is_correctly_removed(self, temporary_directory):
-
         for file in ['file_1.txt', 'file_2.txt', '__init__.py']:
             file_path = Path(temporary_directory) / file
             file_path.touch()
@@ -105,4 +103,3 @@ class TestOperationOnPipelines:
         assert os.path.exists(os.path.join(temporary_directory, 'file_1.txt'))
         assert not os.path.exists(os.path.join(temporary_directory, 'file_2.txt'))
         assert os.path.exists(os.path.join(temporary_directory, '__init__.py'))
-

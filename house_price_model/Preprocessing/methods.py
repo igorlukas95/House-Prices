@@ -28,6 +28,8 @@ class TemporalVariableTransformer(BaseEstimator, TransformerMixin):
             raise TypeError("Variables should be a list")
         if not isinstance(reference_str, str):
             raise TypeError("Reference should be a string")
+        if reference_str not in variables:
+            raise KeyError("reference_str is not found in variables")
 
         self.variables_ = variables
         self.reference_str_ = reference_str
@@ -102,13 +104,10 @@ class CustomSimpleImpute(BaseEstimator, TransformerMixin):
         if not isinstance(fill_values, (int, float, str)):
             raise TypeError("fill_value must best int, float or str")
 
-
         self.variables_ = variables
         self.imputation_ = imputation
         self.fill_values_ = fill_values
         self.encoder_: Dict[str, Union[str, float, int]] = {}
-
-
 
     def fit(self, X: pd.DataFrame, y: pd.Series = None) -> 'CustomSimpleImpute':
         """ Calculates the central tendency values for each variable.
@@ -137,9 +136,9 @@ class CustomSimpleImpute(BaseEstimator, TransformerMixin):
 
             elif X[col].dtypes in ['object', 'category']:
                 if self.imputation_ == "most_frequent":
-                        self.encoder_[col] = X[col].mode()[0]
+                    self.encoder_[col] = X[col].mode()[0]
                 elif self.imputation_ == "constant":
-                        self.encoder_[col] = self.fill_values_
+                    self.encoder_[col] = self.fill_values_
                 else:
                     raise TypeError(f"Column {col} of type {X[col].dtypes} cannot be used with {self.imputation_}")
         return self
@@ -247,7 +246,7 @@ class RareLabelsEncoder(BaseEstimator, TransformerMixin):
             threshold (float): The minimum frequency threshold for value to be included. Below this threshold, value is change to 'Rare'.
         Raises:
             TypeError: If variables is not a list or threshold a float.
-            ValueError: IF a threshold is lower than 0 or greater than 1.
+            ValueError: If a threshold is lower than 0 or greater than 1.
         """
         self.variables_ = variables
         self.threshold_ = threshold
@@ -260,7 +259,7 @@ class RareLabelsEncoder(BaseEstimator, TransformerMixin):
         if threshold < 0.0 or threshold > 1.0:
             raise ValueError("Threshold must be between 0 and 1")
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> 'RareLabelsEncoder':
+    def fit(self, X: pd.DataFrame, y: pd.Series = None) -> 'RareLabelsEncoder':
         """Calculates frequency of each value in specified variable
            and save values that are above a threshold
 
@@ -274,7 +273,8 @@ class RareLabelsEncoder(BaseEstimator, TransformerMixin):
         Raises:
             KeyError: If column specified in variables_ is not in DataFrame.
         """
-        X_copy = pd.concat([X, y], axis=1)
+        X_copy = X.copy()
+
         for col in self.variables_:
             if col in X.columns:
                 rare = (
@@ -283,7 +283,7 @@ class RareLabelsEncoder(BaseEstimator, TransformerMixin):
                     )
                 )
                 self.encoder_[col] = (
-                    list(rare[rare > self.threshold_].index)
+                    list(rare[rare >= self.threshold_].index)
                 )
             else:
                 raise KeyError(f"Column {col} is missing")
@@ -339,13 +339,12 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
         self.variables_ = variables
         self.method_ = method
         self.encoder_: Dict[str, dict] = {}
+        self.target = None
 
         if not isinstance(variables, list):
             raise TypeError('variables must be a list')
-
         if not isinstance(method, str):
             raise TypeError('method must be of type string')
-
         if self.method_ not in ['mean', 'median']:
             raise ValueError('method must be "median" or "mean"')
 
@@ -362,22 +361,23 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
         dataframe = pd.concat([X, y], axis=1)
         sorted_variables = None
         for col in self.variables_:
-            if col in X.columns:
+            if col in dataframe.columns:
                 if self.method_ == 'mean':
                     sorted_variables = (
-                        dataframe.groupby([col])['SalePrice']
+                        dataframe.groupby([col])[y.name]
                         .mean()
                         .sort_values(ascending=True)
                     )
                 elif self.method_ == 'median':
                     sorted_variables = (
-                        dataframe.groupby([col])['SalePrice']
+                        dataframe.groupby([col])[y.name]
                         .median()
                         .sort_values(ascending=True)
                     )
 
                 encoding = {k: i for i, k in enumerate(sorted_variables.index)}
                 self.encoder_[col] = encoding
+                self.target = y
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -386,19 +386,19 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
         Args:
             X (pd.DataFrame): Pandas DataFrame.
 
+
         Returns:
             DataFrame: Returns DataFrame with mapped variables.
 
         Raises:
             KeyError: If columns specified in variables weren't found in DataFrame.
         """
-        X = X.copy()
+        dataframe = pd.concat([X, self.target], axis=1)
         for col in self.variables_:
-            if col in X.columns:
-                X[col] = X[col].map(self.encoder_[col])
-            else:
-                raise KeyError(f"Column {col} does not exist in DataFrame")
-        return X
+            print(self.target)
+            if col in dataframe.columns and col != self.target.name:
+                dataframe[col] = dataframe[col].map(self.encoder_[col])
+        return dataframe
 
 
 class MathFunctionTransformer(BaseEstimator, TransformerMixin):
@@ -455,11 +455,11 @@ class MathFunctionTransformer(BaseEstimator, TransformerMixin):
         X = X.copy()
         for col in self.variables_:
             if col in X.columns:
-                if col == 'log':
+                if self.func_ == 'log':
                     X[col] = np.log(X[col])
-                elif col == 'exp':
+                elif self.func_ == 'exp':
                     X[col] = np.exp(X[col])
-                elif col == 'sqrt':
+                elif self.func_ == 'sqrt':
                     X[col] = np.sqrt(X[col])
             else:
                 raise KeyError(f"Column {col} does not exist")
@@ -507,7 +507,6 @@ class CustomBinarizer(BaseEstimator, TransformerMixin):
             CustomBinarizer: Returns fitted transformer.
         """
         return self
-
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """Binarize values to 1. Values equal to 0 remain unchanged.
 
@@ -524,7 +523,3 @@ class CustomBinarizer(BaseEstimator, TransformerMixin):
             else:
                 raise KeyError(f"Column {col} does not exist")
         return X
-
-
-if __name__ == "__main__":
-   pass
