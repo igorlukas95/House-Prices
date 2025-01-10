@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 from typing import Optional, Tuple
+
+from pandas.core.interchange.dataframe_protocol import DataFrame
+
 from house_price_model.Config.core import _config
 from pydantic import BaseModel, ValidationError, Field
 
@@ -14,6 +17,9 @@ def drop_missing_values(X: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame: Returns DataFrame without missing data.
     """
+
+    if not isinstance(X, pd.DataFrame):
+        raise TypeError("Argument must be a DataFrame")
 
     X = X.copy()
     col_with_missing = [
@@ -142,3 +148,7 @@ class MainModelConfig(BaseModel):
     """This class wraps the ValidationModelConfig to validate a collection of data
     """
     input: ValidationModelConfig
+
+
+
+

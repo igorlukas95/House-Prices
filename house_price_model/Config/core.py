@@ -5,7 +5,6 @@ from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).parent.parent.absolute()
 CONFIG_FILE_PATH = PACKAGE_ROOT / 'config.yml'
-DATASET = PACKAGE_ROOT / 'Dataset'
 TRAINED_MODEL_DIR = PACKAGE_ROOT / 'trained_models'
 
 

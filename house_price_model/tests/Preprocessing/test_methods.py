@@ -495,10 +495,12 @@ class TestCustomBinarizer:
 
 
     def test_if_custom_binarizer_will_raise_error_if_variable_is_not_found(self, dataframe):
-        raises_error(error=ValueError,
+        raises_error(error=KeyError,
                      transformer=CustomBinarizer,
                      variables=['invalidColumn', 'BsmtFinSF2'],
-                     threshold=0.1)
+                     threshold=0.1,
+                     fit_data=True,
+                     dataframe=dataframe)
 
 
     def test_if_custom_binarizer_binarize_correctly(self, dataframe):

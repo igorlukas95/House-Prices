@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from sklearn.pipeline import Pipeline
 from house_price_model import __version__
-from house_price_model.Config.core import _config, DATASET, TRAINED_MODEL_DIR
+from house_price_model.Config.core import _config, TRAINED_MODEL_DIR
 from house_price_model.Preprocessing.data_manager import load_datasets, save_pipeline, load_pipeline, remove_pipeline
 import pandas as pd
 from house_price_model.tests.Mock.dataframe import mock_dataframe
