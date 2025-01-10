@@ -13,13 +13,11 @@ class AppConfig(BaseModel):
 
     Attributes:
         model (str): Name of model
-        training_data (str): Path for training data
-        testing_data (str): Path for testing data
-        pipeline_save_file (str): Path for pipeline
+        dataset (str): Path to dataset
+        pipeline_save_file (str): Path name for a pipeline
     """
     model: str
-    training_data: str
-    testing_data: str
+    dataset: str
     pipeline_save_file: str
 
 
