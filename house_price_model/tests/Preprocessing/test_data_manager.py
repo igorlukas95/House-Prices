@@ -30,7 +30,7 @@ class TestLoadDataset:
         return df
 
     def test_if_loaded_dataframe_type_is_correct(self, test_load_dataset, return_mock_dataframe, dataframe):
-        test_load_dataset.assert_called_with(_config.config_app.training_data, 'train')
+        test_load_dataset.assert_called_with(_config.config_app.dataset, 'train')
         assert isinstance(dataframe, pd.DataFrame)
 
     def test_if_loaded_dataframe_and_mocked_dataframe_are_equal(self, test_load_dataset, return_mock_dataframe,
@@ -46,7 +46,7 @@ class TestLoadDataset:
         test_load_dataset.assert_called_once()
         assert dataframe.empty
 
-    @patch.object(_config.config_app, 'training_data', 'invalid_file')
+    @patch.object(_config.config_app, 'dataset', 'invalid_file')
     def test_if_incorrect_file_path_will_raise_error(self):
         with pytest.raises(FileNotFoundError):
             load_datasets(mode='train')

@@ -1,36 +1,40 @@
 import numpy as np
 import pandas as pd
-from typing import Optional, Tuple
-
+from typing import Optional, Tuple, List
 from pandas.core.interchange.dataframe_protocol import DataFrame
-
 from house_price_model.Config.core import _config
 from pydantic import BaseModel, ValidationError, Field
 
 
-def drop_missing_values(X: pd.DataFrame) -> pd.DataFrame:
+def drop_missing_values(X: pd.DataFrame, unique_missing_columns: bool = False, missing_columns: List[str] = None) -> pd.DataFrame:
     """Drops missing values that aren't declared in config
 
     Args:
+        missing_columns (List[str]): List of missing columns
+        unique_missing_columns (bool): If true, user can select their own columns.
         X (pd.DataFrame): Input DataFrame.
 
     Returns:
-        DataFrame: Returns DataFrame without missing data.
+        DataFrame: Returns DataFrame with missing data removed.
     """
 
     if not isinstance(X, pd.DataFrame):
         raise TypeError("Argument must be a DataFrame")
 
     X = X.copy()
-    col_with_missing = [
-        col
-        for col in _config.config_model.features
-        if col not in _config.config_model.categorical_vars_imputing_with_missing
-        + _config.config_model.categorical_vars_with_na_frequent
-        and X[col].isnull().sum() > 0
-    ]
 
-    X.dropna(subset=col_with_missing, inplace=True)
+    if unique_missing_columns:
+        X.dropna(subset=missing_columns, inplace=True)
+    else:
+        col_with_missing = [
+            col
+            for col in _config.config_model.features
+            if col not in _config.config_model.categorical_vars_imputing_with_missing
+               + _config.config_model.categorical_vars_with_na_frequent
+               and X[col].isnull().sum() > 0
+        ]
+        X.dropna(subset=col_with_missing, inplace=True)
+
     return X
 
 

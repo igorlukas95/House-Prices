@@ -45,7 +45,9 @@ class TestTemporalVariableTransformer:
         raises_error(error=KeyError,
                      transformer=TemporalVariableTransformer,
                      variables=list(sample_datetime_dataframe.columns),
-                     reference_str='Invalid_Key')
+                     reference_str='Invalid_Key',
+                     fit_data=True,
+                     dataframe=sample_datetime_dataframe)
 
     def test_if_variable_name_is_invalid(self, sample_datetime_dataframe):
         raises_error(error=KeyError,
@@ -452,6 +454,7 @@ class TestMathFunctionTranformer:
 
     def test_if_math_transformer_calculates_exponential_correctly(self, dataframe, transformer):
         transformer.func_ = "exp"
+        dataframe = np.sqrt(dataframe)
         transformed_data = transformer.fit_transform(dataframe)
         pd.testing.assert_frame_equal(np.exp(dataframe), transformed_data)
 
@@ -505,3 +508,4 @@ class TestCustomBinarizer:
 
     def test_if_custom_binarizer_binarize_correctly(self, dataframe):
         transformer = CustomBinarizer(variables=list(dataframe.columns), threshold=0.1)
+
