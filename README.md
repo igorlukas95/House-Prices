@@ -14,5 +14,6 @@ https://huggingface.co/datasets/michaelmallari/house-prices-advanced-regression-
 
 ## Installation 
 To start the projects, you need to have Python 3.12+ and also run the following scripts:
+```
 
-
+```
