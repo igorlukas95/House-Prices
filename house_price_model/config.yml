@@ -1,0 +1,133 @@
+pipeline_name: house_price_model
+model: house_price_model
+dataset: "AnDrEw0203/advanced_house_prices"
+preprocessing_pipeline_save_file: preprocessing_data_v
+model_pipeline_save_file: regression_model_output_v
+
+target: SalePrice
+alpha: 0.001
+test_size: 0.2
+random_state: 43
+
+categorical_vars_with_na_frequent:
+  - FireplaceQu
+
+categorical_vars_imputing_with_missing:
+  - BsmtQual
+  - BsmtCond
+  - BsmtExposure
+  - GarageFinish
+  - GarageCond
+
+temporal_variables:
+  - YearRemodAdd
+
+variables_to_rename:
+  1stFlrSF: FirstFlrSF
+  2ndFlrSF: SecondFlrSF
+  3SsnPorch: ThreeSsnPorch
+
+reference_var: YrSold
+
+log_transformation_variables:
+  - LotArea
+  - FirstFlrSF
+  - GrLivArea
+
+binarize_transformation_variables:
+  - BsmtFinSF1
+  - WoodDeckSF
+  - OpenPorchSF
+  - ScreenPorch
+
+quality_variables:
+  - ExterQual
+  - ExterCond
+  - BsmtQual
+  - BsmtCond
+  - HeatingQC
+  - KitchenQual
+  - FireplaceQu
+  - GarageCond
+
+exposure_variables:
+  - BsmtExposure
+
+garagefinish_variables:
+  - GarageFinish
+
+categorical_variables_to_encode:
+  - MSZoning
+  - LotShape
+  - LandSlope
+  - LotConfig
+  - Neighborhood
+  - Condition1
+  - BldgType
+  - RoofStyle
+  - Foundation
+  - CentralAir
+  - Functional
+  - PavedDrive
+  - SaleCondition
+  - MSSubClass
+
+quality_mapping:
+  Po: 1
+  Fa: 2
+  TA: 3
+  Gd: 4
+  Ex: 5
+  NA: 0
+  Missing: 0
+
+exposure_mapping:
+  No: 1
+  Mn: 2
+  Av: 3
+  Gd: 4
+  NA: 0
+  NaN: 0
+  Missing: 0
+
+garagefinish_mapping:
+  Unf: 1
+  RFn: 2
+  Fin: 3
+  Missing: 0
+  NA: 0
+
+features:
+  - FirstFlrSF
+  - BldgType
+  - BsmtCond
+  - BsmtExposure
+  - BsmtFinSF1
+  - BsmtQual
+  - CentralAir
+  - Condition1
+  - ExterQual
+  - ExterCond
+  - FireplaceQu
+  - Foundation
+  - Functional
+  - GarageCond
+  - GarageFinish
+  - GrLivArea
+  - HeatingQC
+  - KitchenQual
+  - LandSlope
+  - LotArea
+  - LotConfig
+  - LotShape
+  - MSSubClass
+  - MSZoning
+  - Neighborhood
+  - OpenPorchSF
+  - PavedDrive
+  - RoofStyle
+  - SaleCondition
+  - ScreenPorch
+  - WoodDeckSF
+  - YearRemodAdd
+  - YrSold
