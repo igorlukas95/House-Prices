@@ -389,9 +389,8 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
         Raises:
             KeyError: If columns specified in variables weren't found in DataFrame.
         """
-        dataframe = pd.concat([X, self.target], axis=1)
+        dataframe = X.copy()
         for col in self.variables_:
-            print(self.target)
             if col in dataframe.columns and col != self.target.name:
                 dataframe[col] = dataframe[col].map(self.encoder_[col])
         return dataframe

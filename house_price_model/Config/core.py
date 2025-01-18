@@ -14,11 +14,13 @@ class AppConfig(BaseModel):
     Attributes:
         model (str): Name of model
         dataset (str): Path to dataset
-        pipeline_save_file (str): Path name for a pipeline
+        preprocessing_pipeline_save_file (str): Path name for a pipeline data transformer
+        model_pipeline_save_file (str): Path name for a pipeline model
     """
     model: str
     dataset: str
-    pipeline_save_file: str
+    preprocessing_pipeline_save_file: str
+    model_pipeline_save_file: str
 
 
 class ModelConfig(BaseModel):

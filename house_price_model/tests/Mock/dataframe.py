@@ -2,7 +2,6 @@
 import numpy as np
 
 
-
 def mock_dataframe(num_rows: int = 1460) -> pd.DataFrame:
     """ Generate a mock DataFrame
 

@@ -2,7 +2,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from house_price_model.Config.core import _config
 from house_price_model.Preprocessing.data_manager import load_datasets, save_pipeline
-from house_price_model.pipeline import pipeline
+from house_price_model.PreprocessingPipeline import  preprocessing_pipeline
+from house_price_model.PipelineModel import model_pipeline
 
 
 def train_pipeline() -> None:
@@ -23,10 +24,14 @@ def train_pipeline() -> None:
 
     y_train = np.log(y_train)
 
-    pipeline.fit(X_train, y_train)
+    preprocessing_pipeline.fit(X_train, y_train)
 
-    save_pipeline(pipeline=pipeline)
-  
+    transformed_data = preprocessing_pipeline.transform(X_train)
+
+    model_pipeline.fit(transformed_data, y_train)
+
+    save_pipeline(model_pipeline=model_pipeline, transformer_pipeline=preprocessing_pipeline)
+
 
 if __name__ == "__main__":
     train_pipeline()

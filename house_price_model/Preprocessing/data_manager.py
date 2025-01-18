@@ -1,14 +1,11 @@
-from huggingface_hub import dataset_info
-
 from house_price_model.Config.core import _config, TRAINED_MODEL_DIR
-import typing as t
-import joblib
-import pandas as pd
+from house_price_model import __version__
 from sklearn.pipeline import Pipeline
 from pathlib import Path
-from house_price_model import __version__
+import pandas as pd
+import typing as t
+import joblib
 from datasets import load_dataset
-
 
 def load_datasets(*, mode: str = 'train') -> pd.DataFrame:
     """Loads data as DataFrame
@@ -20,14 +17,15 @@ def load_datasets(*, mode: str = 'train') -> pd.DataFrame:
         pd.DataFrame: DataFrame with Advanced House Price dataset.
     """
 
-    dataset = load_dataset(_config.config_app.dataset, mode)
+    if not mode in ['train', 'test']:
+        raise ValueError("mode must be equal to 'train' or 'test'")
 
-    if isinstance(dataset[f'{mode}'], pd.DataFrame):
-        return dataset[f'{mode}']
+    ds = load_dataset(_config.config_app.dataset, split=mode).to_pandas().set_index('Id')
 
-    dataframe = pd.DataFrame([data for data in dataset[f'{mode}']])
+    if mode == 'test':
+        ds.drop('SalePrice', axis=1, inplace=True)
 
-    return dataframe
+    return ds
 
 
 def load_pipeline(*, path: Path) -> Pipeline:
@@ -43,20 +41,27 @@ def load_pipeline(*, path: Path) -> Pipeline:
     return pipeline
 
 
-def save_pipeline(*, pipeline: Pipeline) -> None:
-    """Removes a previous version of pipeline and adds new pipeline
+def save_pipeline(*, model_pipeline: Pipeline, transformer_pipeline: Pipeline) -> None:
+    """Removes a previous version of a pipeline and adds a new pipeline
 
     Args:
-        pipeline (Pipeline): Pipeline model.
+        transformer_pipeline (Pipeline): Transformer Pipeline
+        model_pipeline (Pipeline): Model Pipeline
 
     Returns:
          object:
          None
     """
-    model_name = f"{_config.config_app.pipeline_save_file}.{__version__}.pkl"
+
+    model_name = f"{_config.config_app.model_pipeline_save_file}.{__version__}.pkl"
     model_path = TRAINED_MODEL_DIR / model_name
-    remove_pipeline(file_to_keep=[model_name])
-    joblib.dump(pipeline, model_path)
+
+    transformer_name = f"{_config.config_app.preprocessing_pipeline_save_file}.{__version__}.pkl"
+    transformer_path = TRAINED_MODEL_DIR / transformer_name
+
+    remove_pipeline(file_to_keep=[model_name, transformer_name])
+    joblib.dump(model_pipeline, model_path)
+    joblib.dump(transformer_pipeline, transformer_path)
 
 
 def remove_pipeline(*, file_to_keep: t.List[str] = None, model_directory: Path =TRAINED_MODEL_DIR) -> None:

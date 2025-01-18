@@ -1,10 +1,8 @@
 import numpy as np
 import pandas as pd
-from typing import Optional, Tuple, List
-from pandas.core.interchange.dataframe_protocol import DataFrame
+from typing import Tuple, List
 from house_price_model.Config.core import _config
 from pydantic import BaseModel, ValidationError, Field
-
 
 def drop_missing_values(X: pd.DataFrame, unique_missing_columns: bool = False, missing_columns: List[str] = None) -> pd.DataFrame:
     """Drops missing values that aren't declared in config
@@ -55,7 +53,7 @@ def validate_data(X: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
     errors = {}
 
     try:
-        MainModelConfig(input=dataframe.replace(np.nan, None).to_dict(orient="records"))
+        MainModelConfig(input=dataframe.fillna({np.nan: None}).to_dict(orient="records"))
     except ValidationError as error:
         errors = error.json()
 
@@ -151,8 +149,4 @@ class ValidationModelConfig(BaseModel):
 class MainModelConfig(BaseModel):
     """This class wraps the ValidationModelConfig to validate a collection of data
     """
-    input: ValidationModelConfig
-
-
-
-
+    input: List[ValidationModelConfig]

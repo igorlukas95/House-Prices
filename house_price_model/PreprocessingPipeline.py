@@ -3,12 +3,13 @@ from house_price_model.Config.core import _config
 from sklearn.pipeline import Pipeline
 import house_price_model.Preprocessing.methods as F
 from feature_engine.selection import DropFeatures
+from feature_engine.wrappers import SklearnTransformerWrapper
+from sklearn.preprocessing import MinMaxScaler
 import numpy as np
-from sklearn.linear_model import Lasso
 
 
 # Pipeline that process data in sequential order
-pipeline = Pipeline(
+preprocessing_pipeline = Pipeline(
     [
         (
             'missing_imputation', F.CustomSimpleImpute(
@@ -27,11 +28,6 @@ pipeline = Pipeline(
             'time_elapsing', F.TemporalVariableTransformer(
                 variables=_config.config_model.temporal_variables,
                 reference_str=_config.config_model.reference_var,
-            ),
-        ),
-        (
-            'drop_features', DropFeatures(
-                features_to_drop=[_config.config_model.reference_var]
             ),
         ),
         (
@@ -77,12 +73,12 @@ pipeline = Pipeline(
             ),
         ),
         (
-            'min_man_scaler', MinMaxScaler()
+            ('scaler', SklearnTransformerWrapper(MinMaxScaler(), variables=_config.config_model.features))
         ),
         (
-            'lasso', Lasso(
-                alpha=_config.config_model.alpha,
-                random_state=_config.config_model.random_state)
+            'drop_features', DropFeatures(
+                features_to_drop=[_config.config_model.reference_var]
+            ),
         ),
     ]
 )

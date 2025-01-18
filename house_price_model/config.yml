@@ -1,7 +1,8 @@
 pipeline_name: house_price_model
 model: house_price_model
-dataset: Xuehang/House_Prices_Advanced_Regression_Techniques
-pipeline_save_file: regression_model_output_v
+dataset: "AnDrEw0203/advanced_house_prices"
+preprocessing_pipeline_save_file: preprocessing_data_v
+model_pipeline_save_file: regression_model_output_v
 
 target: SalePrice
 alpha: 0.001
