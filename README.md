@@ -1,4 +1,5 @@
 # House Price Prediction 
+![House](https://github.com/KamilAndrzejewski-dev/House-Prices/blob/main/House.png?raw=true)
 
 This project focuses on creating a predicting house price model using machine learning techniques.
 The goal is to build a model that can predict the value of properties based on dataset features.
