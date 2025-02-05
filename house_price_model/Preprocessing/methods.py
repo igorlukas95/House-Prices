@@ -356,17 +356,16 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
         Returns:
             MonotonicOrdinalEncoder: Returns fitted transformer.
         """
-        dataframe = pd.concat([X, y], axis=1)
+
+
+        dataframe = X.copy()
         sorted_variables = None
         for col in self.variables_:
             if col in dataframe.columns:
                 if self.method_ == 'mean':
-                    sorted_variables = (
-                        dataframe.groupby([col])[y.name]
-                        .mean()
-                        .sort_values(ascending=True)
-                    )
-                elif self.method_ == 'median':
+                    aggredated = dataframe.groupby([col])[y.name].mean()
+                    sorted_variables = aggredated.sort_values(ascending=True)
+                elif self.method_ == 'median' and col != 'SalePrice':
                     sorted_variables = (
                         dataframe.groupby([col])[y.name].median().sort_values(ascending=True)
                     )
@@ -393,6 +392,7 @@ class MonotonicOrdinalEncoder(BaseEstimator, TransformerMixin):
         for col in self.variables_:
             if col in dataframe.columns and col != self.target.name:
                 dataframe[col] = dataframe[col].map(self.encoder_[col])
+
         return dataframe
 
 

@@ -60,6 +60,7 @@ def save_pipeline(*, model_pipeline: Pipeline, transformer_pipeline: Pipeline) -
     transformer_path = TRAINED_MODEL_DIR / transformer_name
 
     remove_pipeline(file_to_keep=[model_name, transformer_name])
+
     joblib.dump(model_pipeline, model_path)
     joblib.dump(transformer_pipeline, transformer_path)
 
@@ -81,3 +82,7 @@ def remove_pipeline(*, file_to_keep: t.List[str] = None, model_directory: Path =
     for model_path in model_directory.iterdir():
         if model_path.name not in ['__init__.py'] + file_to_keep:
             model_path.unlink()
+
+if __name__ == "__main__":
+    ds = load_dataset(_config.config_app.dataset, split='train')
+    print(type(ds))

@@ -16,7 +16,7 @@ def mock_dataframe(num_rows: int = 1460) -> pd.DataFrame:
 
     data = {
         "Id": range(1, num_rows + 1),
-        "MSSubClass": np.random.randint(20, 200, size=num_rows),
+        "MSSubClass": np.random.randint(20, 200, size=num_rows, dtype=np.int64),
         "MSZoning": np.random.choice(["RL", "RM", "FV", "RH", "C (all)"], size=num_rows),
         "LotFrontage": np.random.randint(21, 200, size=num_rows),
         "LotArea": np.random.randint(1300, 50000, size=num_rows),
@@ -107,4 +107,4 @@ def mock_dataframe(num_rows: int = 1460) -> pd.DataFrame:
         "SalePrice": np.random.randint(35000, 750000, size=num_rows)
     }
 
-    return pd.DataFrame(data)
+    return pd.DataFrame(data).set_index('Id')

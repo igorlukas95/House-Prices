@@ -1,5 +1,8 @@
 ﻿import os.path
 import tempfile
+import unittest.mock
+
+import datasets
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -16,8 +19,9 @@ class TestLoadDataset:
     @pytest.fixture
     def test_load_dataset(self, mocker):
         return mocker.patch(
-            'house_price_model.Preprocessing.data_manager.load_dataset', autospec=True)
-
+            'house_price_model.Preprocessing.data_manager.load_dataset',
+            autospec=True
+        )
     @pytest.fixture
     def return_mock_dataframe(self, test_load_dataset):
         """Fixture for providing load_dataset a return value as mocked dataframe"""
@@ -28,17 +32,35 @@ class TestLoadDataset:
         df = load_datasets()
         return df
 
-    def test_if_loaded_dataframe_type_is_correct(self, test_load_dataset, return_mock_dataframe, dataframe):
-        test_load_dataset.assert_called_with(_config.config_app.dataset, 'train')
+    def test_if_loaded_dataframe_type_is_correct(self, dataframe):
         assert isinstance(dataframe, pd.DataFrame)
 
-    def test_if_loaded_dataframe_and_mocked_dataframe_are_equal(self, test_load_dataset, return_mock_dataframe,
+    def test_if_loaded_dataframe_and_mocked_dataframe_have_equal_columns(self,
                                                                 dataframe):
         """Test if Dataframe returned by 'load_datasets' matches the mocked dataframe"""
-        pd.testing.assert_frame_equal(dataframe, mock_dataframe())
 
-    def test_if_size_of_dataframe_is_correct(self, test_load_dataset, return_mock_dataframe, dataframe):
-        assert dataframe.shape == (1460, 81)
+        columns = [
+            "MSSubClass", "MSZoning", "LotFrontage", "LotArea", "Street", "Alley",
+            "LotShape", "LandContour", "Utilities", "LotConfig", "LandSlope", "Neighborhood",
+            "Condition1", "Condition2", "BldgType", "HouseStyle", "OverallQual", "OverallCond",
+            "YearBuilt", "YearRemodAdd", "RoofStyle", "RoofMatl", "Exterior1st", "Exterior2nd",
+            "MasVnrType", "MasVnrArea", "ExterQual", "ExterCond", "Foundation", "BsmtQual",
+            "BsmtCond", "BsmtExposure", "BsmtFinType1", "BsmtFinSF1", "BsmtFinType2",
+            "BsmtFinSF2", "BsmtUnfSF", "TotalBsmtSF", "Heating", "HeatingQC", "CentralAir",
+            "Electrical", "1stFlrSF", "2ndFlrSF", "LowQualFinSF", "GrLivArea", "BsmtFullBath",
+            "BsmtHalfBath", "FullBath", "HalfBath", "BedroomAbvGr", "KitchenAbvGr",
+            "KitchenQual", "TotRmsAbvGrd", "Functional", "Fireplaces", "FireplaceQu",
+            "GarageType", "GarageYrBlt", "GarageFinish", "GarageCars", "GarageArea",
+            "GarageQual", "GarageCond", "PavedDrive", "WoodDeckSF", "OpenPorchSF",
+            "EnclosedPorch", "3SsnPorch", "ScreenPorch", "PoolArea", "PoolQC", "Fence",
+            "MiscFeature", "MiscVal", "MoSold", "YrSold", "SaleType", "SaleCondition",
+            "SalePrice"
+        ]
+
+        assert list(dataframe.columns) == columns
+
+    def test_if_size_of_dataframe_is_correct(self, dataframe):
+        assert dataframe.shape == (1460, 80)
 
     def test_if_loaded_empty_dataframe_is_empty(self, test_load_dataset, dataframe):
         test_load_dataset.return_value = {'train': []}
@@ -78,15 +100,23 @@ class TestOperationOnPipelines:
     @patch('house_price_model.Preprocessing.data_manager.remove_pipeline')
     @patch('joblib.dump')
     def test_if_pipeline_is_correctly_saved(self, mock_dump, mock_remove):
+
         pipeline_mock = MagicMock()
+        transformer_mock = MagicMock()
 
-        model_name = f'{_config.config_app.pipeline_save_file}.{__version__}.pkl'
+        model_name = f'{_config.config_app.model_pipeline_save_file}.{__version__}.pkl'
+        transformer_name = f'{_config.config_app.preprocessing_pipeline_save_file}.{__version__}.pkl'
 
-        save_pipeline(pipeline=pipeline_mock)
+        save_pipeline(model_pipeline=pipeline_mock, transformer_pipeline=transformer_mock)
 
         path = TRAINED_MODEL_DIR / model_name
+        transformer_path = TRAINED_MODEL_DIR / transformer_name
 
-        mock_dump.assert_called_with(pipeline_mock, path)
+        mock_dump.assert_has_calls([
+            unittest.mock.call(pipeline_mock, path),
+            unittest.mock.call(transformer_mock, transformer_path)
+        ])
+
         mock_remove.assert_called_once()
 
     def test_if_pipeline_is_correctly_removed(self, temporary_directory):

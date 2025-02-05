@@ -119,17 +119,21 @@ def load_yaml_file(yaml_path: Optional[Path] = CONFIG_FILE_PATH) -> YAML:
         print(f"Error opening file {yaml_path}: {e}")
 
 
-def load_and_validate_config(config: YAML = None) -> Config:
+def load_and_validate_config(config_yaml: Path = None) -> Config:
     """Loads YAML object and validates it
 
     Args:
-        config (YAML): YAML object.
+        config_yaml: yaml path
         By default, its equal to None.
 
     Returns:
         Config: Validated configuration.
     """
-    config = load_yaml_file()
+
+    if config_yaml is None:
+        config = load_yaml_file()
+    else:
+        config = load_yaml_file(yaml_path=config_yaml)
 
     return Config(
         config_app=AppConfig(**config.data),

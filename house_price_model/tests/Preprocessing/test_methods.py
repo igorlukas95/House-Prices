@@ -388,7 +388,7 @@ class TestMonotonicOrdinalEncoder:
                      y_obligatory=True,
                      target='SalePrice')
 
-    def test_if_ordinal_encoder_will_correctly_calculate_monotonic_encoder(self, dataframe):
+    def test_if_ordinal_encoder_will_correctly_calculates_monotonic_encoder(self, dataframe):
         transformer = MonotonicOrdinalEncoder(variables=list(dataframe.columns),
                                               method="mean")
 
@@ -399,7 +399,9 @@ class TestMonotonicOrdinalEncoder:
             "SalePrice": [192000, 187000, 160000, 167000, 174000, 199000, 132000, 215000, 165000, 176000]
         })
 
-        transformed_variables = transformer.fit_transform(dataframe.drop('SalePrice', axis=1), dataframe['SalePrice'])
+        transformer.fit(dataframe, dataframe['SalePrice'])
+
+        transformed_variables = transformer.transform(dataframe)
 
         pd.testing.assert_frame_equal(expected_dataframe, transformed_variables)
 
